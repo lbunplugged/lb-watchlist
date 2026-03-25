@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Show Me Scanner</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --panel: #0c0c0c;
+      --border: #222;
+      --text: #f5f5f5;
+      --muted: #9b9b9b;
+      --good: #37d67a;
+      --bad: #ff5c5c;
+      --warn: #f5b942;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      letter-spacing: 0.08em;
+    }
+    p {
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 20px 0 24px;
+    }
+    button {
+      background: #111;
+      color: white;
+      border: 1px solid #333;
+      padding: 14px 22px;
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    button:hover { background: #171717; }
+    .status {
+      color: var(--muted);
+      margin-bottom: 18px;
+      min-height: 20px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .ticker {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .tag {
+      border: 1px solid #333;
+      color: #ddd;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: inline-block;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+    .good { color: var(--good); }
+    .bad { color: var(--bad); }
+    .warn { color: var(--warn); }
+    .reason {
+      margin-top: 12px;
+      line-height: 1.5;
+      color: #e9e9e9;
+    }
+    .small { font-size: 13px; color: var(--muted); }
+    .section-title {
+      margin: 28px 0 12px;
+      font-size: 18px;
+      color: #fff;
+      letter-spacing: 0.04em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 820px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    .footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    code {
+      color: #ddd;
+      background: #111;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>LB's Watch List</h1>
+    <p>Simple scanner for your style: MACD + RSI + 5 EMA + 20 EMA + Volume, plus one risky setup below zero. Ranked from best to least based on your setup.</p>
+
+    <div class="toolbar">
+      <input id="apiKey" type="password" placeholder="Paste your free Twelve Data API key" style="background:#111;color:#fff;border:1px solid #333;padding:14px 14px;border-radius:10px;min-width:280px;flex:1;" />
+      <button id="saveKeyBtn">SAVE KEY</button>
+      <button id="showBtn">SHOW ME</button>
+    </div>
+
+    <div class="status" id="status">Ready. Save your API key, then scan.</div>
+
+    <div class="section-title">Top 5 Ranked Setups</div>
+    <div id="topFive" class="grid"></div>
+
+    <div class="section-title">Bonus Risky Setup</div>
+    <div id="riskyOne"></div>
+
+    <div class="footer">
+      This version is built for free end-of-day use with Twelve Data. Save your personal API key, then scan the watchlist. To stay within the free Basic plan limits, the scanner works in small batches and caches each symbol for the current market day, so later scans that same night are much faster. The consistency label shows the current streak, like <code>2 days positive</code> or <code>1 day negative</code>, based on recent daily closes.
+    </div>
+  </div>
+
+  <script>
+    // 50 pre-determined tickers to watch
+    const WATCHLIST = [
+      'AAPL','AMD','AMZN','BA','BABA','COIN','COST','CRM','CSCO','CVX',
+      'DIS','DVN','GOOGL','GS','HD','INTC','IWM','JPM','LLY','MARA',
+      'META','MRVL','MSFT','MU','NFLX','NKE','NOK','NVDA','ORCL','PANW',
+      'PLTR','PYPL','QQQ','RBLX','ROKU','SHOP','SMCI','SOFI','SPY','SQ',
+      'TSLA','UBER','UNH','V','WFC','XLE','XOM','ZM','AVGO','ARM'
+    ];
+
+    const API_ROOT = 'https://api.twelvedata.com/time_series';
+    const CACHE_PREFIX = 'lb-watchlist-cache-v1';
+    const BATCH_SIZE = 8;
+    const BATCH_DELAY_MS = 65000;
+    const OUTPUTSIZE = 80;
+
+    function getMarketDateKey() {
+      const now = new Date();
+      const eastern = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(now);
+      return eastern;
+    }
+
+    function getCacheKey(symbol) {
+      return `${CACHE_PREFIX}:${getMarketDateKey()}:${symbol}`;
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKey').value.trim();
+      if (!key) {
+        alert('Paste your Twelve Data API key first.');
+        return;
+      }
+      localStorage.setItem('lb_twelve_data_key', key);
+      document.getElementById('status').textContent = 'API key saved in this browser.';
+    }
+
+    function loadApiKey() {
+      const key = localStorage.getItem('lb_twelve_data_key') || '';
+      document.getElementById('apiKey').value = key;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function ema(values, period) {
+      const k = 2 / (period + 1);
+      const out = [];
+      let prev = values[0];
+      out.push(prev);
+      for (let i = 1; i < values.length; i++) {
+        prev = values[i] * k + prev * (1 - k);
+        out.push(prev);
+      }
+      return out;
+    }
+
+    function sma(values, period) {
+      const out = [];
+      for (let i = 0; i < values.length; i++) {
+        if (i < period - 1) {
+          out.push(null);
+          continue;
+        }
+        let sum = 0;
+        for (let j = i - period + 1; j <= i; j++) sum += values[j];
+        out.push(sum / period);
+      }
+      return out;
+    }
+
+    function macd(values, fast = 12, slow = 26, signalPeriod = 9) {
+      const fastEma = ema(values, fast);
+      const slowEma = ema(values, slow);
+      const macdLine = values.map((_, i) => fastEma[i] - slowEma[i]);
+      const signalLine = ema(macdLine, signalPeriod);
+      const hist = macdLine.map((v, i) => v - signalLine[i]);
+      return { macdLine, signalLine, hist };
+    }
+
+    function rsi(values, period = 14) {
+      const out = new Array(values.length).fill(null);
+      let gains = 0;
+      let losses = 0;
+      for (let i = 1; i <= period; i++) {
+        const diff = values[i] - values[i - 1];
+        if (diff >= 0) gains += diff;
+        else losses -= diff;
+      }
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+      out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+      for (let i = period + 1; i < values.length; i++) {
+        const diff = values[i] - values[i - 1];
+        const gain = diff > 0 ? diff : 0;
+        const loss = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * (period - 1) + gain) / period;
+        avgLoss = (avgLoss * (period - 1) + loss) / period;
+        out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+      }
+      return out;
+    }
+
+    function streakLabel(closes) {
+      if (closes.length < 2) return 'no streak';
+      const lastDiff = closes[closes.length - 1] - closes[closes.length - 2];
+      let direction = lastDiff >= 0 ? 'positive' : 'negative';
+      let count = 1;
+      for (let i = closes.length - 1; i > 0; i--) {
+        const diff = closes[i] - closes[i - 1];
+        if (direction === 'positive' && diff >= 0) count++;
+        else if (direction === 'negative' && diff < 0) count++;
+        else break;
+      }
+      return `${count - 1} day${count - 1 === 1 ? '' : 's'} ${direction}`;
+    }
+
+    function normalizeSeries(valuesAsc) {
+      return valuesAsc.map(v => ({
+        open: Number(v.open),
+        high: Number(v.high),
+        low: Number(v.low),
+        close: Number(v.close),
+        volume: Number(v.volume || 0),
+        datetime: v.datetime
+      }));
+    }
+
+    function scoreTickerFromBars(ticker, bars) {
+      const closes = bars.map(b => b.close);
+      const volumes = bars.map(b => b.volume);
+      const ema5 = ema(closes, 5);
+      const ema20 = ema(closes, 20);
+      const vol20 = sma(volumes, 20);
+      const { macdLine, signalLine } = macd(closes);
+      const rsi14 = rsi(closes, 14);
+      const i = closes.length - 1;
+      const prev = i - 1;
+
+      const priceAbove20 = closes[i] > ema20[i];
+      const emaBullish = (ema5[i] > ema20[i] && ema5[prev] <= ema20[prev]) || (ema5[i] > ema20[i] && closes[i] > closes[prev]);
+      const macdBullish = (macdLine[i] > signalLine[i] && macdLine[prev] <= signalLine[prev]) || (macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev]);
+      const rsiBullish = rsi14[i] !== null && rsi14[i] >= 50 && rsi14[i] <= 65;
+      const volumeBullish = vol20[i] !== null && volumes[i] > vol20[i];
+      const belowZeroBullish = macdLine[i] < 0 && signalLine[i] < 0 && macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev];
+
+      let score = 0;
+      if (priceAbove20) score += 25;
+      if (emaBullish) score += 20;
+      if (macdBullish) score += 25;
+      if (rsiBullish) score += 15;
+      if (volumeBullish) score += 15;
+
+      let riskyScore = 0;
+      if (belowZeroBullish) riskyScore += 35;
+      if (ema5[i] > ema20[i] || closes[i] > ema20[i]) riskyScore += 20;
+      if (rsi14[i] !== null && rsi14[i] >= 45 && rsi14[i] < 55) riskyScore += 15;
+      if (vol20[i] !== null && volumes[i] > vol20[i]) riskyScore += 15;
+      if (closes[i] > closes[prev]) riskyScore += 15;
+
+      const reasons = [];
+      if (priceAbove20) reasons.push('price above 20 EMA');
+      if (emaBullish) reasons.push('5 EMA bullish vs 20 EMA');
+      if (macdBullish) reasons.push('MACD bullish');
+      if (rsiBullish) reasons.push(`RSI ${rsi14[i].toFixed(1)}`);
+      if (volumeBullish) reasons.push('volume above 20-day average');
+
+      const riskyReasons = [];
+      if (belowZeroBullish) riskyReasons.push('MACD still below zero but turning bullish');
+      if (ema5[i] > ema20[i] || closes[i] > ema20[i]) riskyReasons.push('price/EMA structure improving');
+      if (rsi14[i] !== null && rsi14[i] >= 45 && rsi14[i] < 55) riskyReasons.push(`RSI ${rsi14[i].toFixed(1)} with room to run`);
+      if (vol20[i] !== null && volumes[i] > vol20[i]) riskyReasons.push('volume support present');
+      if (closes[i] > closes[prev]) riskyReasons.push('latest day closed green');
+
+      return {
+        ticker,
+        closes,
+        score,
+        riskyScore,
+        reasons,
+        riskyReasons,
+        streak: streakLabel(closes),
+        lastDate: bars[i].datetime,
+        stats: {
+          close: closes[i].toFixed(2),
+          ema5: ema5[i].toFixed(2),
+          ema20: ema20[i].toFixed(2),
+          macd: macdLine[i].toFixed(3),
+          signal: signalLine[i].toFixed(3),
+          rsi: rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
+          volume: volumes[i],
+          volAvg: vol20[i] ? Math.round(vol20[i]) : null
+        }
+      };
+    }
+
+    async function fetchChunk(symbols, apiKey) {
+      const cached = [];
+      const uncached = [];
+      for (const symbol of symbols) {
+        const raw = localStorage.getItem(getCacheKey(symbol));
+        if (raw) {
+          try {
+            cached.push(JSON.parse(raw));
+            continue;
+          } catch (_) {}
+        }
+        uncached.push(symbol);
+      }
+      if (!uncached.length) return cached;
+
+      const url = `${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || 'Request failed');
+      }
+
+      const out = [...cached];
+      const entries = uncached.length === 1 && data?.values ? { [uncached[0]]: data } : data;
+
+      for (const symbol of uncached) {
+        const item = entries[symbol];
+        if (!item || !item.values) continue;
+        const ascBars = normalizeSeries(item.values.slice().reverse());
+        const scored = scoreTickerFromBars(symbol, ascBars);
+        localStorage.setItem(getCacheKey(symbol), JSON.stringify(scored));
+        out.push(scored);
+      }
+      return out;
+    }
+
+    function winnerParagraph(item, rank, isRisky = false) {
+      const reasons = isRisky ? item.riskyReasons : item.reasons;
+      const opening = isRisky
+        ? `${item.ticker} is the bonus risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier and less confirmed than the main top 5, but it can be the kind of setup that gets a stronger run if buyers keep stepping in.`
+        : `${item.ticker} comes in at rank #${rank} because it matches more of your setup than most names on the watchlist. The chart is showing a stronger combination of trend, momentum, and participation, which is what you want for a short call option hold.`;
+
+      const detailParts = [];
+      if (reasons.length) detailParts.push(`Main reasons: ${reasons.join(', ')}.`);
+      detailParts.push(`Right now the streak shows ${item.streak}, which helps you quickly see whether price has been stacking green days or bleeding lower.`);
+      detailParts.push(`This scan is based on the latest finished daily bar dated ${item.lastDate}. It should be treated as a watchlist rank, not an automatic buy signal.`);
+      return `${opening} ${detailParts.join(' ')}`;
+    }
+
+    function renderCard(item, isRisky = false, rank = null) {
+      const div = document.createElement('div');
+      div.className = 'card';
+      const streakClass = item.streak.includes('positive') ? 'good' : 'bad';
+      const reasonText = (isRisky ? item.riskyReasons : item.reasons).join(', ') || 'No strong reason found';
+      const title = isRisky ? item.ticker : `#${rank} ${item.ticker}`;
+      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank}`;
+      div.innerHTML = `
+        <div class="row">
+          <div>
+            <div class="ticker">${title}</div>
+            <div class="small">Date ${item.lastDate} · Close ${item.stats.close} · 5 EMA ${item.stats.ema5} · 20 EMA ${item.stats.ema20}</div>
+          </div>
+          <div>
+            <span class="tag ${streakClass}">${item.streak}</span>
+            ${isRisky ? '<span class="tag warn">risky below-zero setup</span>' : '<span class="tag good">top setup</span>'}
+          </div>
+        </div>
+        <div class="reason"><strong>Why:</strong> ${reasonText}</div>
+        <div class="small" style="margin-top:10px;">MACD ${item.stats.macd} vs Signal ${item.stats.signal} · RSI ${item.stats.rsi} · Vol ${Number(item.stats.volume).toLocaleString()} ${item.stats.volAvg ? `vs avg ${Number(item.stats.volAvg).toLocaleString()}` : ''}</div>
+        <div style="margin-top:14px;">
+          <button class="explain-btn" data-summary-id="${summaryId}">${isRisky ? 'Why this risky setup?' : 'Why is this a winner?'}</button>
+        </div>
+        <div id="${summaryId}" class="reason" style="display:none; margin-top:12px;">${winnerParagraph(item, rank, isRisky)}</div>
+      `;
+      const btn = div.querySelector('.explain-btn');
+      const summary = div.querySelector(`#${summaryId}`);
+      btn.addEventListener('click', () => {
+        const isOpen = summary.style.display === 'block';
+        summary.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen ? (isRisky ? 'Why this risky setup?' : 'Why is this a winner?') : 'Hide explanation';
+      });
+      return div;
+    }
+
+    async function runScan() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const status = document.getElementById('status');
+      const topFive = document.getElementById('topFive');
+      const riskyOne = document.getElementById('riskyOne');
+      topFive.innerHTML = '';
+      riskyOne.innerHTML = '';
+
+      if (!apiKey) {
+        status.textContent = 'Paste and save your Twelve Data API key first.';
+        return;
+      }
+
+      status.textContent = 'Scanning watchlist...';
+      const all = [];
+      const chunks = [];
+      for (let i = 0; i < WATCHLIST.length; i += BATCH_SIZE) {
+        chunks.push(WATCHLIST.slice(i, i + BATCH_SIZE));
+      }
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        status.textContent = `Scanning batch ${i + 1} of ${chunks.length}... ${chunk.join(', ')}`;
+        try {
+          const result = await fetchChunk(chunk, apiKey);
+          for (const row of result) {
+            const existingIndex = all.findIndex(x => x.ticker === row.ticker);
+            if (existingIndex >= 0) all[existingIndex] = row;
+            else all.push(row);
+          }
+        } catch (err) {
+          status.textContent = `Error on batch ${i + 1}: ${err.message}`;
+          return;
+        }
+        if (i < chunks.length - 1) {
+          status.textContent = `Batch ${i + 1} complete. Waiting about 65 seconds to stay inside the free API limit...`;
+          await sleep(BATCH_DELAY_MS);
+        }
+      }
+
+      const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
+      const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
+      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, false, idx + 1)));
+      if (risky) riskyOne.appendChild(renderCard(risky, true));
+      status.textContent = `Done. Ranked ${all.length} tickers using the latest cached or fetched daily data.`;
+    }
+
+    document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
+    document.getElementById('showBtn').addEventListener('click', runScan);
+    loadApiKey();
+  </script>
+</body>
+</html>
