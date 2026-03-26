@@ -208,4 +208,434 @@
         alert('Paste your Twelve Data API key first.');
         return;
       }
-      localStorage.setItem('lb_twelve_data
+      localStorage.setItem('lb_twelve_data_key', key);
+      document.getElementById('status').textContent = 'API key saved in this browser.';
+    }
+
+    function loadApiKey() {
+      const key = localStorage.getItem('lb_twelve_data_key') || '';
+      document.getElementById('apiKey').value = key;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function clearCache() {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(CACHE_PREFIX)) {
+          localStorage.removeItem(key);
+        }
+      });
+      alert('Cache cleared. Next run will fetch fresh data.');
+    }
+
+    function ema(values, period) {
+      const k = 2 / (period + 1);
+      const out = [];
+      let prev = values[0];
+      out.push(prev);
+      for (let i = 1; i < values.length; i++) {
+        prev = values[i] * k + prev * (1 - k);
+        out.push(prev);
+      }
+      return out;
+    }
+
+    function sma(values, period) {
+      const out = [];
+      for (let i = 0; i < values.length; i++) {
+        if (i < period - 1) {
+          out.push(null);
+          continue;
+        }
+        let sum = 0;
+        for (let j = i - period + 1; j <= i; j++) sum += values[j];
+        out.push(sum / period);
+      }
+      return out;
+    }
+
+    function macd(values, fast = 12, slow = 26, signalPeriod = 9) {
+      const fastEma = ema(values, fast);
+      const slowEma = ema(values, slow);
+      const macdLine = values.map((_, i) => fastEma[i] - slowEma[i]);
+      const signalLine = ema(macdLine, signalPeriod);
+      const hist = macdLine.map((v, i) => v - signalLine[i]);
+      return { macdLine, signalLine, hist };
+    }
+
+    function rsi(values, period = 14) {
+      const out = new Array(values.length).fill(null);
+      let gains = 0;
+      let losses = 0;
+
+      for (let i = 1; i <= period; i++) {
+        const diff = values[i] - values[i - 1];
+        if (diff >= 0) gains += diff;
+        else losses -= diff;
+      }
+
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+      out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+
+      for (let i = period + 1; i < values.length; i++) {
+        const diff = values[i] - values[i - 1];
+        const gain = diff > 0 ? diff : 0;
+        const loss = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * (period - 1) + gain) / period;
+        avgLoss = (avgLoss * (period - 1) + loss) / period;
+        out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+      }
+
+      return out;
+    }
+
+    function streakLabel(closes) {
+      if (closes.length < 2) return 'no streak';
+      const lastDiff = closes[closes.length - 1] - closes[closes.length - 2];
+      const direction = lastDiff >= 0 ? 'positive' : 'negative';
+      let count = 1;
+
+      for (let i = closes.length - 1; i > 0; i--) {
+        const diff = closes[i] - closes[i - 1];
+        if (direction === 'positive' && diff >= 0) count++;
+        else if (direction === 'negative' && diff < 0) count++;
+        else break;
+      }
+
+      return `${count - 1} day${count - 1 === 1 ? '' : 's'} ${direction}`;
+    }
+
+    function normalizeSeries(valuesAsc) {
+      return valuesAsc.map(v => ({
+        open: Number(v.open),
+        high: Number(v.high),
+        low: Number(v.low),
+        close: Number(v.close),
+        volume: Number(v.volume || 0),
+        datetime: v.datetime
+      }));
+    }
+
+    function scoreTickerFromBars(ticker, bars) {
+      const closes = bars.map(b => b.close);
+      const volumes = bars.map(b => b.volume);
+      const ema5 = ema(closes, 5);
+      const ema20 = ema(closes, 20);
+      const vol20 = sma(volumes, 20);
+      const { macdLine, signalLine } = macd(closes);
+      const rsi14 = rsi(closes, 14);
+      const i = closes.length - 1;
+      const prev = i - 1;
+
+      const priceAbove20 = closes[i] > ema20[i];
+      const emaBullish =
+        (ema5[i] > ema20[i] && ema5[prev] <= ema20[prev]) ||
+        (ema5[i] > ema20[i] && closes[i] > closes[prev]);
+
+      const macdBullish =
+        (macdLine[i] > signalLine[i] && macdLine[prev] <= signalLine[prev]) ||
+        (macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev]);
+
+      const rsiBullish = rsi14[i] !== null && rsi14[i] >= 50 && rsi14[i] <= 65;
+      const volumeBullish = vol20[i] !== null && volumes[i] > vol20[i];
+
+      const belowZeroBullish =
+        macdLine[i] < 0 &&
+        signalLine[i] < 0 &&
+        macdLine[i] > signalLine[i] &&
+        macdLine[i] > macdLine[prev];
+
+      let score = 0;
+      if (priceAbove20) score += 25;
+      if (emaBullish) score += 20;
+      if (macdBullish) score += 25;
+      if (rsiBullish) score += 15;
+      if (volumeBullish) score += 15;
+
+      let riskyScore = 0;
+      if (belowZeroBullish) riskyScore += 35;
+      if (ema5[i] > ema20[i] || closes[i] > ema20[i]) riskyScore += 20;
+      if (rsi14[i] !== null && rsi14[i] >= 45 && rsi14[i] < 55) riskyScore += 15;
+      if (vol20[i] !== null && volumes[i] > vol20[i]) riskyScore += 15;
+      if (closes[i] > closes[prev]) riskyScore += 15;
+
+      const reasons = [];
+      if (priceAbove20) reasons.push('price above 20 EMA');
+      if (emaBullish) reasons.push('5 EMA bullish vs 20 EMA');
+      if (macdBullish) reasons.push('MACD bullish');
+      if (rsiBullish) reasons.push(`RSI ${rsi14[i].toFixed(1)}`);
+      if (volumeBullish) reasons.push('volume above 20-day average');
+
+      const riskyReasons = [];
+      if (belowZeroBullish) riskyReasons.push('MACD still below zero but turning bullish');
+      if (ema5[i] > ema20[i] || closes[i] > ema20[i]) riskyReasons.push('price/EMA structure improving');
+      if (rsi14[i] !== null && rsi14[i] >= 45 && rsi14[i] < 55) riskyReasons.push(`RSI ${rsi14[i].toFixed(1)} with room to run`);
+      if (vol20[i] !== null && volumes[i] > vol20[i]) riskyReasons.push('volume support present');
+      if (closes[i] > closes[prev]) riskyReasons.push('latest day closed green');
+
+      return {
+        ticker,
+        closes,
+        score,
+        riskyScore,
+        reasons,
+        riskyReasons,
+        streak: streakLabel(closes),
+        lastDate: bars[i].datetime,
+        stats: {
+          close: closes[i].toFixed(2),
+          ema5: ema5[i].toFixed(2),
+          ema20: ema20[i].toFixed(2),
+          macd: macdLine[i].toFixed(3),
+          signal: signalLine[i].toFixed(3),
+          rsi: rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
+          volume: volumes[i],
+          volAvg: vol20[i] ? Math.round(vol20[i]) : null
+        }
+      };
+    }
+
+    async function fetchChunk(symbols, apiKey, forceRefresh = false) {
+      const cached = [];
+      const uncached = [];
+
+      for (const symbol of symbols) {
+        const raw = localStorage.getItem(getCacheKey(symbol));
+        if (!forceRefresh && raw) {
+          try {
+            cached.push(JSON.parse(raw));
+            continue;
+          } catch (_) {}
+        }
+        uncached.push(symbol);
+      }
+
+      if (!uncached.length) {
+        return { rows: cached, source: 'cached' };
+      }
+
+      const url = `${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || 'Request failed');
+      }
+
+      const out = [...cached];
+      const entries = uncached.length === 1 && data?.values ? { [uncached[0]]: data } : data;
+
+      for (const symbol of uncached) {
+        const item = entries[symbol];
+        if (!item || !item.values) continue;
+        const ascBars = normalizeSeries(item.values.slice().reverse());
+        const scored = scoreTickerFromBars(symbol, ascBars);
+        localStorage.setItem(getCacheKey(symbol), JSON.stringify(scored));
+        out.push(scored);
+      }
+
+      return { rows: out, source: cached.length ? 'mixed' : 'fresh' };
+    }
+
+    function formatUpdatedTime() {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Chicago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit'
+      }).format(new Date()) + ' CT';
+    }
+
+    async function fetchMarketTrend(apiKey, forceRefresh = false) {
+      const cacheKey = `${CACHE_PREFIX}:${getMarketDateKey()}:MARKET_TREND`;
+
+      if (!forceRefresh) {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+          try { return JSON.parse(raw); } catch (_) {}
+        }
+      }
+
+      const url = `${API_ROOT}?symbol=${encodeURIComponent('SPY')}&interval=1day&outputsize=80&apikey=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok || !data?.values) {
+        return { label: 'unknown', detail: 'SPY unavailable', source: 'unknown' };
+      }
+
+      const bars = normalizeSeries(data.values.slice().reverse());
+      const closes = bars.map(b => b.close);
+      const ema5 = ema(closes, 5);
+      const ema20 = ema(closes, 20);
+      const { macdLine, signalLine } = macd(closes);
+      const rsi14 = rsi(closes, 14);
+      const i = closes.length - 1;
+
+      let label = 'neutral';
+
+      if (closes[i] > ema20[i] && ema5[i] > ema20[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) {
+        label = 'bullish';
+      } else if (closes[i] < ema20[i] && ema5[i] < ema20[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) {
+        label = 'bearish';
+      }
+
+      const result = {
+        label,
+        detail: `SPY close ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'} · MACD ${macdLine[i].toFixed(3)} vs ${signalLine[i].toFixed(3)}`,
+        source: 'fresh'
+      };
+
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+      return result;
+    }
+
+    function updateMetaInfo(updatedAt, dataSource, marketTrend) {
+      const el = document.getElementById('metaInfo');
+      const trendText = marketTrend ? `${marketTrend.label}${marketTrend.detail ? ` (${marketTrend.detail})` : ''}` : '--';
+      el.textContent = `Last updated: ${updatedAt || '--'} · Data source: ${dataSource || '--'} · Market trend: ${trendText}`;
+    }
+
+    function winnerParagraph(item, rank, isRisky = false) {
+      const reasons = isRisky ? item.riskyReasons : item.reasons;
+
+      const opening = isRisky
+        ? `${item.ticker} is the bonus risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier and less confirmed than the main top 5, but it can be the kind of setup that gets a stronger run if buyers keep stepping in.`
+        : `${item.ticker} comes in at rank #${rank} because it matches more of your setup than most names on the watchlist. The chart is showing a stronger combination of trend, momentum, and participation, which is what you want for a short call option hold.`;
+
+      const detailParts = [];
+      if (reasons.length) detailParts.push(`Main reasons: ${reasons.join(', ')}.`);
+      detailParts.push(`Right now the streak shows ${item.streak}, which helps you quickly see whether price has been stacking green days or bleeding lower.`);
+      detailParts.push(`This scan is based on the latest finished daily bar dated ${item.lastDate}. It should be treated as a watchlist rank, not an automatic buy signal.`);
+
+      return `${opening} ${detailParts.join(' ')}`;
+    }
+
+    function renderCard(item, isRisky = false, rank = null) {
+      const div = document.createElement('div');
+      div.className = 'card';
+      const streakClass = item.streak.includes('positive') ? 'good' : 'bad';
+      const reasonText = (isRisky ? item.riskyReasons : item.reasons).join(', ') || 'No strong reason found';
+      const title = isRisky ? item.ticker : `#${rank} ${item.ticker}`;
+      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank}`;
+
+      div.innerHTML = `
+        <div class="row">
+          <div>
+            <div class="ticker">${title}</div>
+            <div class="small">Date ${item.lastDate} · Close ${item.stats.close} · 5 EMA ${item.stats.ema5} · 20 EMA ${item.stats.ema20}</div>
+          </div>
+          <div>
+            <span class="tag ${streakClass}">${item.streak}</span>
+            ${isRisky ? '<span class="tag warn">risky below-zero setup</span>' : '<span class="tag good">top setup</span>'}
+          </div>
+        </div>
+        <div class="reason"><strong>Why:</strong> ${reasonText}</div>
+        <div class="small" style="margin-top:10px;">MACD ${item.stats.macd} vs Signal ${item.stats.signal} · RSI ${item.stats.rsi} · Vol ${Number(item.stats.volume).toLocaleString()} ${item.stats.volAvg ? `vs avg ${Number(item.stats.volAvg).toLocaleString()}` : ''}</div>
+        <div style="margin-top:14px;">
+          <button class="explain-btn" data-summary-id="${summaryId}">${isRisky ? 'Why this risky setup?' : 'Why is this a winner?'}</button>
+        </div>
+        <div id="${summaryId}" class="reason" style="display:none; margin-top:12px;">${winnerParagraph(item, rank, isRisky)}</div>
+      `;
+
+      const btn = div.querySelector('.explain-btn');
+      const summary = div.querySelector(`#${summaryId}`);
+
+      btn.addEventListener('click', () => {
+        const isOpen = summary.style.display === 'block';
+        summary.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen ? (isRisky ? 'Why this risky setup?' : 'Why is this a winner?') : 'Hide explanation';
+      });
+
+      return div;
+    }
+
+    async function runScan(forceRefresh = false) {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const status = document.getElementById('status');
+      const topFive = document.getElementById('topFive');
+      const riskyOne = document.getElementById('riskyOne');
+
+      topFive.innerHTML = '';
+      riskyOne.innerHTML = '';
+
+      if (!apiKey) {
+        status.textContent = 'Paste and save your Twelve Data API key first.';
+        return;
+      }
+
+      status.textContent = forceRefresh ? 'Force refreshing watchlist...' : 'Scanning watchlist...';
+      updateMetaInfo('--', forceRefresh ? 'fresh requested' : '--', null);
+
+      const all = [];
+      const chunks = [];
+      const sourcesSeen = new Set();
+
+      for (let i = 0; i < WATCHLIST.length; i += BATCH_SIZE) {
+        chunks.push(WATCHLIST.slice(i, i + BATCH_SIZE));
+      }
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        status.textContent = `${forceRefresh ? 'Refreshing' : 'Scanning'} batch ${i + 1} of ${chunks.length}... ${chunk.join(', ')}`;
+
+        try {
+          const result = await fetchChunk(chunk, apiKey, forceRefresh);
+          sourcesSeen.add(result.source);
+
+          for (const row of result.rows) {
+            const existingIndex = all.findIndex(x => x.ticker === row.ticker);
+            if (existingIndex >= 0) all[existingIndex] = row;
+            else all.push(row);
+          }
+        } catch (err) {
+          status.textContent = `Error on batch ${i + 1}: ${err.message}`;
+          updateMetaInfo(formatUpdatedTime(), 'error', null);
+          return;
+        }
+
+        if (i < chunks.length - 1) {
+          status.textContent = `Batch ${i + 1} complete. Waiting about 65 seconds to stay inside the free API limit...`;
+          await sleep(BATCH_DELAY_MS);
+        }
+      }
+
+      let marketTrend = null;
+      try {
+        marketTrend = await fetchMarketTrend(apiKey, forceRefresh);
+      } catch (_) {}
+
+      const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
+      const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
+
+      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, false, idx + 1)));
+      if (risky) riskyOne.appendChild(renderCard(risky, true));
+
+      let dataSource = 'cached';
+      if (sourcesSeen.has('fresh') && sourcesSeen.size === 1) dataSource = 'fresh';
+      else if (sourcesSeen.has('mixed') || (sourcesSeen.has('fresh') && sourcesSeen.has('cached'))) dataSource = 'mixed';
+      else if (forceRefresh) dataSource = 'fresh requested';
+
+      status.textContent = `Done. Ranked ${all.length} tickers using the latest cached or fetched daily data.`;
+      updateMetaInfo(formatUpdatedTime(), dataSource, marketTrend);
+    }
+
+    document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
+    document.getElementById('showBtn').addEventListener('click', () => runScan(false));
+
+    window.clearCache = function() {
+      clearCache();
+      updateMetaInfo('--', 'cache cleared', null);
+      runScan(true);
+    };
+
+    loadApiKey();
+  </script>
+</body>
+</html>
