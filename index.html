@@ -27,7 +27,7 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at top, rgba(212,175,55,0.06), transparent 28%),
+        radial-gradient(circle at top, rgba(212,175,55,0.05), transparent 26%),
         linear-gradient(180deg, #090909 0%, #040404 100%);
       color: var(--text);
       font-family: Inter, Arial, Helvetica, sans-serif;
@@ -40,24 +40,42 @@
     }
 
     .hero {
-      background: linear-gradient(180deg, rgba(212,175,55,0.09), rgba(255,255,255,0.02));
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
       border: 1px solid var(--border);
       border-radius: 28px;
-      padding: 24px 18px 20px;
+      padding: 42px 18px 20px;
       box-shadow: var(--shadow);
       margin-bottom: 18px;
       position: relative;
       overflow: hidden;
     }
 
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 92px;
+      background:
+        radial-gradient(circle at 8% 10%, #f4d06b 0 5px, transparent 6px),
+        radial-gradient(circle at 22% 8%, #c58e11 0 7px, transparent 8px),
+        radial-gradient(circle at 38% 12%, #f4d06b 0 6px, transparent 7px),
+        radial-gradient(circle at 53% 10%, #b88308 0 8px, transparent 9px),
+        radial-gradient(circle at 72% 11%, #f4d06b 0 6px, transparent 7px),
+        radial-gradient(circle at 89% 9%, #c58e11 0 7px, transparent 8px),
+        linear-gradient(180deg, rgba(255,215,110,0.96) 0%, rgba(194,133,15,0.95) 38%, rgba(156,102,8,0.92) 64%, rgba(156,102,8,0) 100%);
+      clip-path: polygon(0 0,100% 0,100% 34%,96% 34%,95% 62%,92% 82%,88% 82%,87% 46%,84% 34%,78% 34%,77% 70%,74% 91%,70% 91%,69% 44%,63% 34%,57% 34%,56% 78%,53% 100%,49% 100%,48% 46%,44% 34%,37% 34%,36% 56%,33% 78%,29% 78%,28% 40%,22% 34%,15% 34%,14% 70%,11% 94%,7% 94%,6% 46%,0 34%);
+      filter: drop-shadow(0 8px 14px rgba(212,175,55,0.22));
+      opacity: 0.98;
+      pointer-events: none;
+    }
+
     .hero::after {
       content: '';
       position: absolute;
-      top: -35%;
-      right: -10%;
-      width: 180px;
-      height: 180px;
-      background: radial-gradient(circle, rgba(212,175,55,0.14), transparent 68%);
+      inset: 0;
+      background: radial-gradient(circle at 84% 20%, rgba(212,175,55,0.08), transparent 24%);
       pointer-events: none;
     }
 
@@ -67,14 +85,18 @@
       line-height: 0.96;
       letter-spacing: 0.02em;
       color: #fff8e7;
+      position: relative;
+      z-index: 1;
     }
 
     .subtitle {
       margin-top: 12px;
-      color: #b9ad88;
+      color: #d8c48b;
       font-size: 15px;
-      line-height: 1.45;
+      line-height: 1.55;
       max-width: 560px;
+      position: relative;
+      z-index: 1;
     }
 
     .meta-bar {
@@ -82,6 +104,8 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
     }
 
     .pill {
@@ -105,6 +129,7 @@
       padding: 16px;
       box-shadow: var(--shadow);
       margin-bottom: 16px;
+      transition: box-shadow 0.22s ease, border-color 0.22s ease;
     }
 
     .control-label {
@@ -157,18 +182,22 @@
       font-weight: 800;
       letter-spacing: 0.04em;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
     }
 
     button:hover { background: linear-gradient(180deg, #18181c, #111116); }
 
-    .button-primary {
-      background: linear-gradient(180deg, rgba(212,175,55,0.24), rgba(212,175,55,0.08));
-      border-color: rgba(212,175,55,0.45);
-      color: #fff8df;
+    button.button-active,
+    button:active {
+      background: linear-gradient(180deg, rgba(212,175,55,0.30), rgba(212,175,55,0.10));
+      border-color: rgba(212,175,55,0.50);
+      box-shadow: 0 0 0 1px rgba(212,175,55,0.10), 0 0 24px rgba(212,175,55,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+      transform: translateY(1px);
     }
 
-    .button-primary:hover {
-      background: linear-gradient(180deg, rgba(212,175,55,0.30), rgba(212,175,55,0.10));
+    .button-primary {
+      background: linear-gradient(180deg, #141416, #0d0d10);
+      color: #fff8df;
     }
 
     .status-box {
@@ -422,7 +451,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 10px;
+      margin-top: 12px;
       padding: 7px 10px;
       border-radius: 999px;
       border: 1px solid rgba(126,168,255,0.22);
@@ -431,6 +460,31 @@
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.03em;
+    }
+
+    .ai-breakdown {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(126,168,255,0.12);
+    }
+
+    .ai-title {
+      font-size: 13px;
+      color: #bfd0ff;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 8px 0;
+    }
+
+    .section-card.flash {
+      animation: flashGold 1.2s ease;
+    }
+
+    @keyframes flashGold {
+      0% { box-shadow: 0 0 0 rgba(212,175,55,0); border-color: rgba(255,255,255,0.06); }
+      35% { box-shadow: 0 0 0 1px rgba(212,175,55,0.18), 0 0 28px rgba(212,175,55,0.18); border-color: rgba(212,175,55,0.42); }
+      100% { box-shadow: var(--shadow); border-color: rgba(255,255,255,0.06); }
     }
 
     .footer {
@@ -446,7 +500,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>LB's Watch<br>List</h1>
-      <div class="subtitle">Luxury-grade mobile scanner for your short call option strategy. Clean at a glance. Deep when you tap in.</div>
+      <div class="subtitle">Welcome to your luxury scanner, built to help you move like an elite trader with calm, clear conviction. Scan fast, tap deeper, and let the details come to you only when you want them.</div>
       <div class="meta-bar">
         <div class="pill">🟢 Strong Setup</div>
         <div class="pill">🟡 Watch</div>
@@ -489,7 +543,7 @@
       <div id="riskyOne" class="list"></div>
     </div>
 
-    <div class="section-card">
+    <div class="section-card" id="savedPicksSection">
       <div class="section-title">Saved Picks Morning Check</div>
       <div id="savedPicks" class="list"></div>
     </div>
@@ -500,7 +554,7 @@
     </div>
 
     <div class="footer">
-      Night Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, and quick trade idea.
+      Night Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, quick trade idea, and a separate AI breakdown.
     </div>
   </div>
 
@@ -530,7 +584,7 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-premium-ai-v1';
+    const CACHE_PREFIX = 'lb-watchlist-premium-ai-v2';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
@@ -726,20 +780,6 @@
       if (vol20[i] !== null && volumes[i] > vol20[i]) riskyScore += 15;
       if (closes[i] > closes[prev]) riskyScore += 15;
 
-      const reasons = [];
-      if (priceAbove20) reasons.push('price above 20 EMA');
-      if (emaBullish) reasons.push('5 EMA bullish vs 20 EMA');
-      if (macdBullish) reasons.push('MACD bullish');
-      if (rsiBullish) reasons.push(`RSI ${rsi14[i].toFixed(1)}`);
-      if (volumeBullish) reasons.push('volume above 20-day average');
-
-      const riskyReasons = [];
-      if (belowZeroBullish) riskyReasons.push('MACD still below zero but turning bullish');
-      if (ema5[i] > ema20[i] || closes[i] > ema20[i]) riskyReasons.push('price/EMA structure improving');
-      if (rsi14[i] !== null && rsi14[i] >= 45 && rsi14[i] < 55) riskyReasons.push(`RSI ${rsi14[i].toFixed(1)} with room to run`);
-      if (vol20[i] !== null && volumes[i] > vol20[i]) riskyReasons.push('volume support present');
-      if (closes[i] > closes[prev]) riskyReasons.push('latest day closed green');
-
       const verdict = getVerdictFromScore(score);
       const confidence = getConfidence(score);
 
@@ -750,10 +790,7 @@
         riskyScore,
         verdict,
         confidence,
-        reasons,
-        riskyReasons,
         streak: streakLabel(closes),
-        quickIdea: '',
         aiSummary: '',
         aiExplanation: '',
         aiTradeIdea: '',
@@ -916,7 +953,7 @@
       const verdictLabel = getVerdictLabel(verdict);
       const verdictClass = verdict === 'strong' ? 'verdict-strong' : verdict === 'watch' ? 'verdict-watch' : 'verdict-avoid';
       const quickIdea = item.aiTradeIdea || getQuickTradeIdea(item, isRisky);
-      const description = item.aiExplanation || buildFallbackDescription(item, rank, isRisky);
+      const description = buildFallbackDescription(item, rank, isRisky);
       const summaryLine = item.aiSummary || (
         isRisky
           ? 'Early setup. Interesting, but not fully confirmed yet.'
@@ -948,10 +985,14 @@
         <div id="${summaryId}" class="detail-panel" style="display:${expanded ? 'block' : 'none'};">
           <div class="detail-title">Full Breakdown</div>
           <div class="detail-text">${description}</div>
-          <div class="ai-chip">AI-enhanced explanation</div>
           <div class="detail-grid">${renderIndicators(item, isRisky)}</div>
           ${renderStats(item)}
-          <div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${quickIdea}</div>
+          <div class="detail-text quick-trade-line" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${quickIdea}</div>
+          <div class="ai-breakdown">
+            <div class="ai-chip">AI-enhanced explanation</div>
+            <div class="ai-title">AI Breakdown</div>
+            <div class="detail-text ai-detail-text">Loading deeper AI explanation...</div>
+          </div>
         </div>
       `;
 
@@ -959,10 +1000,13 @@
         const panel = card.querySelector(`#${summaryId}`);
         const alreadyLoaded = panel.dataset.aiLoaded === 'true';
 
-        if (!alreadyLoaded) {
+        if (panel.style.display !== 'block') {
           panel.style.display = 'block';
-          const detailText = panel.querySelector('.detail-text');
-          detailText.textContent = 'Loading AI explanation...';
+        }
+
+        if (!alreadyLoaded) {
+          const aiDetailText = panel.querySelector('.ai-detail-text');
+          aiDetailText.textContent = 'Loading AI explanation...';
 
           const ai = await getAIAnalysis(item, rank, isRisky);
           item.aiSummary = ai.summary_line || item.aiSummary;
@@ -972,8 +1016,8 @@
           const quickLine = card.querySelector('.quick-line');
           quickLine.textContent = `${topHighlight ? '🔥 Best setup today. ' : ''}${item.aiSummary}`;
 
-          detailText.textContent = item.aiExplanation;
-          panel.querySelector('.detail-text:last-child').innerHTML = `<strong>Quick trade idea:</strong> ${item.aiTradeIdea}`;
+          aiDetailText.textContent = item.aiExplanation || 'No AI explanation returned.';
+          panel.querySelector('.quick-trade-line').innerHTML = `<strong>Quick trade idea:</strong> ${item.aiTradeIdea}`;
           panel.dataset.aiLoaded = 'true';
         } else {
           panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -1094,9 +1138,26 @@
       }
     }
 
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.add('button-active');
+        setTimeout(() => btn.classList.remove('button-active'), 550);
+      });
+    });
+
     document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
     document.getElementById('showBtn').addEventListener('click', () => runScan(false));
-    document.getElementById('morningBtn').addEventListener('click', renderSavedPicksOnly);
+    document.getElementById('morningBtn').addEventListener('click', () => {
+      renderSavedPicksOnly();
+      const section = document.getElementById('savedPicksSection');
+      if (section) {
+        section.classList.remove('flash');
+        void section.offsetWidth;
+        section.classList.add('flash');
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
     document.getElementById('refreshBtn').addEventListener('click', () => {
       clearCacheOnly();
       updateMetaInfo('--', 'cache cleared', null);
