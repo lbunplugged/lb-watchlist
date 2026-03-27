@@ -1,1172 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LB's Watch List</title>
-  <style>
-    :root {
-      --bg: #050505;
-      --panel: #0d0d0f;
-      --panel-2: #121215;
-      --border: rgba(212,175,55,0.18);
-      --border-soft: rgba(255,255,255,0.06);
-      --text: #f7f4ea;
-      --muted: #9f9886;
-      --gold: #d4af37;
-      --green: #38d27a;
-      --yellow: #f0c84b;
-      --red: #ff5f6d;
-      --blue: #7ea8ff;
-      --shadow: 0 12px 40px rgba(0,0,0,0.45);
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LB's Watch List</title>
 
-    * { box-sizing: border-box; }
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #000;
+  color: white;
+}
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top, rgba(212,175,55,0.05), transparent 26%),
-        linear-gradient(180deg, #090909 0%, #040404 100%);
-      color: var(--text);
-      font-family: Inter, Arial, Helvetica, sans-serif;
-    }
+.container {
+  padding: 16px;
+}
 
-    .wrap {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 28px 18px 48px;
-    }
+/* HEADER */
+.header {
+  padding: 20px;
+  border-radius: 16px;
+  background: #0b0b0b;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,215,0,0.15);
+}
 
-    .hero {
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border: 1px solid var(--border);
-      border-radius: 28px;
-      padding: 42px 18px 20px;
-      box-shadow: var(--shadow);
-      margin-bottom: 18px;
-      position: relative;
-      overflow: hidden;
-    }
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+}
 
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 92px;
-      background:
-        radial-gradient(circle at 8% 10%, #f4d06b 0 5px, transparent 6px),
-        radial-gradient(circle at 22% 8%, #c58e11 0 7px, transparent 8px),
-        radial-gradient(circle at 38% 12%, #f4d06b 0 6px, transparent 7px),
-        radial-gradient(circle at 53% 10%, #b88308 0 8px, transparent 9px),
-        radial-gradient(circle at 72% 11%, #f4d06b 0 6px, transparent 7px),
-        radial-gradient(circle at 89% 9%, #c58e11 0 7px, transparent 8px),
-        linear-gradient(180deg, rgba(255,215,110,0.96) 0%, rgba(194,133,15,0.95) 38%, rgba(156,102,8,0.92) 64%, rgba(156,102,8,0) 100%);
-      clip-path: polygon(0 0,100% 0,100% 34%,96% 34%,95% 62%,92% 82%,88% 82%,87% 46%,84% 34%,78% 34%,77% 70%,74% 91%,70% 91%,69% 44%,63% 34%,57% 34%,56% 78%,53% 100%,49% 100%,48% 46%,44% 34%,37% 34%,36% 56%,33% 78%,29% 78%,28% 40%,22% 34%,15% 34%,14% 70%,11% 94%,7% 94%,6% 46%,0 34%);
-      filter: drop-shadow(0 8px 14px rgba(212,175,55,0.22));
-      opacity: 0.98;
-      pointer-events: none;
-    }
+.header p {
+  margin-top: 8px;
+  color: #bbb;
+  font-size: 14px;
+}
 
-    .hero::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 84% 20%, rgba(212,175,55,0.08), transparent 24%);
-      pointer-events: none;
-    }
+/* BUTTONS */
+.btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: none;
+  background: #111;
+  color: white;
+  font-weight: bold;
+  transition: 0.2s;
+}
 
-    h1 {
-      margin: 0;
-      font-size: 44px;
-      line-height: 0.96;
-      letter-spacing: 0.02em;
-      color: #fff8e7;
-      position: relative;
-      z-index: 1;
-    }
+.btn:active {
+  background: linear-gradient(90deg, #7a5c00, #d4af37);
+}
 
-    .subtitle {
-      margin-top: 12px;
-      color: #d8c48b;
-      font-size: 15px;
-      line-height: 1.55;
-      max-width: 560px;
-      position: relative;
-      z-index: 1;
-    }
+/* CARD */
+.card {
+  background: #0b0b0b;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255,215,0,0.15);
+}
 
-    .meta-bar {
-      margin-top: 14px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1;
-    }
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border-soft);
-      background: rgba(255,255,255,0.03);
-      color: #d1c39b;
-      font-size: 12px;
-      font-weight: 600;
-    }
+.badge {
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
 
-    .control-card,
-    .section-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-      border: 1px solid var(--border-soft);
-      border-radius: 22px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-      transition: box-shadow 0.22s ease, border-color 0.22s ease;
-    }
+.green { background: #0f5132; }
+.yellow { background: #6b5e00; }
+.red { background: #5a1a1a; }
 
-    .control-label {
-      color: var(--gold);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
+.check { color: #00c853; }
+.x { color: #ff5252; }
 
-    .stack {
-      display: grid;
-      gap: 10px;
-    }
+.hidden {
+  display: none;
+}
 
-    input[type="password"],
-    input[type="text"] {
-      width: 100%;
-      background: rgba(255,255,255,0.025);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,0.07);
-      padding: 16px 16px;
-      border-radius: 16px;
-      font-size: 15px;
-      outline: none;
-    }
-
-    input[type="password"]:focus,
-    input[type="text"]:focus {
-      border-color: rgba(212,175,55,0.45);
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.10);
-    }
-
-    .button-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    button {
-      width: 100%;
-      background: linear-gradient(180deg, #141416, #0d0d10);
-      color: #fff9eb;
-      border: 1px solid rgba(212,175,55,0.22);
-      padding: 15px 14px;
-      cursor: pointer;
-      border-radius: 16px;
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-      transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
-    }
-
-    button:hover { background: linear-gradient(180deg, #18181c, #111116); }
-
-    button.button-active,
-    button:active {
-      background: linear-gradient(180deg, rgba(212,175,55,0.30), rgba(212,175,55,0.10));
-      border-color: rgba(212,175,55,0.50);
-      box-shadow: 0 0 0 1px rgba(212,175,55,0.10), 0 0 24px rgba(212,175,55,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
-      transform: translateY(1px);
-    }
-
-    .button-primary {
-      background: linear-gradient(180deg, #141416, #0d0d10);
-      color: #fff8df;
-    }
-
-    .status-box {
-      margin-top: 12px;
-      padding: 14px 14px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .status {
-      color: #e6dcc0;
-      font-size: 14px;
-      line-height: 1.5;
-      min-height: 20px;
-    }
-
-    .meta {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .section-title {
-      margin: 2px 0 14px;
-      font-size: 13px;
-      color: var(--gold);
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      font-weight: 800;
-    }
-
-    .list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .stock-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 18px;
-      padding: 14px;
-      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
-    }
-
-    .stock-card.clickable { cursor: pointer; }
-
-    .stock-card.clickable:hover {
-      border-color: rgba(212,175,55,0.24);
-      transform: translateY(-1px);
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-    }
-
-    .stock-card.top-highlight {
-      border-color: rgba(212,175,55,0.44);
-      background: linear-gradient(180deg, rgba(212,175,55,0.12), rgba(255,255,255,0.02));
-      box-shadow: 0 0 0 1px rgba(212,175,55,0.08), 0 16px 36px rgba(0,0,0,0.42);
-    }
-
-    .stock-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .stock-left {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .rank-badge {
-      min-width: 34px;
-      height: 34px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(212,175,55,0.12);
-      border: 1px solid rgba(212,175,55,0.28);
-      color: var(--gold);
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .fire-badge {
-      color: #ffd36c;
-      font-size: 18px;
-    }
-
-    .ticker-wrap { min-width: 0; }
-
-    .ticker {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      color: #fff9ec;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .subline {
-      margin-top: 3px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .stock-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .verdict {
-      padding: 8px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      border: 1px solid transparent;
-      white-space: nowrap;
-    }
-
-    .verdict-strong {
-      color: #dfffe9;
-      background: rgba(56,210,122,0.13);
-      border-color: rgba(56,210,122,0.28);
-    }
-
-    .verdict-watch {
-      color: #fff8da;
-      background: rgba(240,200,75,0.12);
-      border-color: rgba(240,200,75,0.28);
-    }
-
-    .verdict-avoid {
-      color: #ffe4e7;
-      background: rgba(255,95,109,0.12);
-      border-color: rgba(255,95,109,0.26);
-    }
-
-    .confidence {
-      min-width: 54px;
-      text-align: center;
-      padding: 8px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      color: #f8f1da;
-      border: 1px solid rgba(212,175,55,0.22);
-      background: rgba(212,175,55,0.08);
-    }
-
-    .quick-line {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #ded7c2;
-    }
-
-    .tap-line {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #7f9fff;
-      letter-spacing: 0.02em;
-    }
-
-    .detail-panel {
-      display: none;
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .detail-title {
-      font-size: 13px;
-      color: var(--gold);
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    .detail-text {
-      font-size: 14px;
-      line-height: 1.58;
-      color: #ece5d2;
-    }
-
-    .detail-grid {
-      display: grid;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .indicator-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: #e7e1cf;
-    }
-
-    .check {
-      color: var(--green);
-      font-weight: 900;
-      font-size: 17px;
-      width: 18px;
-      text-align: center;
-    }
-
-    .xmark {
-      color: var(--red);
-      font-weight: 900;
-      font-size: 17px;
-      width: 18px;
-      text-align: center;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .stat-chip {
-      padding: 10px 10px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.025);
-      border: 1px solid rgba(255,255,255,0.05);
-      font-size: 12px;
-      color: #d5ccb2;
-    }
-
-    .note-card {
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
-      color: #d4cab0;
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    .ai-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 12px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(126,168,255,0.22);
-      background: rgba(126,168,255,0.08);
-      color: #bfd0ff;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-    }
-
-    .ai-breakdown {
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(126,168,255,0.12);
-    }
-
-    .ai-title {
-      font-size: 13px;
-      color: #bfd0ff;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin: 8px 0;
-    }
-
-    .section-card.flash {
-      animation: flashGold 1.2s ease;
-    }
-
-    @keyframes flashGold {
-      0% { box-shadow: 0 0 0 rgba(212,175,55,0); border-color: rgba(255,255,255,0.06); }
-      35% { box-shadow: 0 0 0 1px rgba(212,175,55,0.18), 0 0 28px rgba(212,175,55,0.18); border-color: rgba(212,175,55,0.42); }
-      100% { box-shadow: var(--shadow); border-color: rgba(255,255,255,0.06); }
-    }
-
-    .footer {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.65;
-      padding: 4px 2px 0;
-    }
-  </style>
+.section-title {
+  color: gold;
+  margin-top: 14px;
+  font-weight: bold;
+}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="hero">
-      <h1>LB's Watch<br>List</h1>
-      <div class="subtitle">Welcome to your luxury scanner, built to help you move like an elite trader with calm, clear conviction. Scan fast, tap deeper, and let the details come to you only when you want them.</div>
-      <div class="meta-bar">
-        <div class="pill">🟢 Strong Setup</div>
-        <div class="pill">🟡 Watch</div>
-        <div class="pill">🔴 Avoid</div>
-      </div>
-    </div>
 
-    <div class="control-card">
-      <div class="control-label">Access</div>
-      <div class="stack">
-        <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
-        <div class="button-grid">
-          <button id="saveKeyBtn">Save Key</button>
-          <button id="showBtn" class="button-primary">Night Scan</button>
-          <button id="morningBtn">Check My Picks</button>
-          <button id="refreshBtn">Force Refresh</button>
-        </div>
-      </div>
-      <div class="status-box">
-        <div class="status" id="status">Ready. Save your API key, then scan.</div>
-        <div class="meta" id="metaInfo">Last updated: -- · Data source: -- · Market trend: --</div>
-      </div>
-    </div>
+<div class="container">
 
-    <div class="control-card">
-      <div class="control-label">Single Ticker Check</div>
-      <div class="stack">
-        <input id="singleTickerInput" type="text" placeholder="Enter ticker symbol" />
-        <button id="checkTickerBtn">Check Ticker</button>
-      </div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-title">Top 5 Ranked Setups</div>
-      <div id="topFive" class="list"></div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-title">Bonus Risky Setup</div>
-      <div id="riskyOne" class="list"></div>
-    </div>
-
-    <div class="section-card" id="savedPicksSection">
-      <div class="section-title">Saved Picks Morning Check</div>
-      <div id="savedPicks" class="list"></div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-title">Single Ticker Result</div>
-      <div id="singleTickerResult"></div>
-    </div>
-
-    <div class="footer">
-      Night Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, quick trade idea, and a separate AI breakdown.
-    </div>
+  <div class="header">
+    <h1>LB’s Watch List</h1>
+    <p>Welcome to your luxury scanner. Built for clarity, precision, and real setups — not noise.</p>
   </div>
 
-  <script>
-    const AI_BACKEND_URL = "https://shrill-cherry-6968.leonardbrown40.workers.dev";
+  <button class="btn" onclick="loadSample()">Night Scan</button>
 
-    const WATCHLIST = [
-      'AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','AMD','NFLX',
-      'ORCL','CRM','ADBE','NOW','QCOM','AMAT','MU','ARM','SHOP','PANW',
-      'MRVL','SMCI','INTC','TSM','ASML','LRCX','KLAC','MCHP','NXPI','ANET',
-      'SNPS','CDNS','CRWD','DDOG','MDB','NET','SNOW','PLTR','CFLT','ESTC',
-      'COIN','MARA','RIOT','RBLX','ROKU','SOFI','UBER','LYFT','SQ','PYPL',
-      'HOOD','AFRM','UPST','APP','DUOL','CELH','CAVA','HIMS','IONQ','RKLB',
-      'JPM','GS','MS','BAC','WFC','C','SCHW','BLK','V','MA',
-      'AXP','COF','CME','ICE','SPGI','MCO','CB','PGR','AIG','BX',
-      'XOM','CVX','DVN','OXY','COP','EOG','SLB','HAL','FANG','APA',
-      'XLE','MPC','VLO','PSX','LNG','EQT','KMI','WMB','ENB','PXD',
-      'LLY','UNH','JNJ','ABBV','MRK','AMGN','TMO','ISRG','DHR','GILD',
-      'REGN','MRNA','VRTX','BSX','SYK','BMY','PFE','MDT','CI','HUM',
-      'COST','HD','LOW','NKE','DIS','SBUX','MCD','CMG','BKNG','ABNB',
-      'TGT','WMT','TJX','ROST','LULU','ULTA','DECK','ELF','ETSY','EBAY',
-      'BA','CAT','DE','GE','RTX','LMT','NOC','GD','ETN','PH',
-      'HON','UPS','FDX','UNP','NSC','CSX','DAL','UAL','AAL','JBLU',
-      'SPY','QQQ','IWM','DIA','XLK','XLF','XLV','XLI','XLY','XLC',
-      'XBI','SMH','SOXX','ARKK','KRE','TAN','IBB','TQQQ','SQQQ','FXI',
-      'BABA','PDD','JD','BIDU','NOK','SAP','NVO','RACE','MELI','SE'
-    ];
+  <div id="results"></div>
 
-    const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-premium-ai-v2';
-    const BATCH_SIZE = 25;
-    const BATCH_DELAY_MS = 30000;
-    const OUTPUTSIZE = 80;
+</div>
 
-    function getMarketDateKey() {
-      const now = new Date();
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false
-      });
-      const parts = formatter.formatToParts(now);
-      const date = `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}-${parts.find(p => p.type === 'day').value}`;
-      const hour = parseInt(parts.find(p => p.type === 'hour').value, 10);
-      return hour >= 16 ? date + '-afterclose' : date;
+<script>
+
+function getExplanation(stock) {
+  let reasons = [];
+
+  if (stock.priceAbove20)
+    reasons.push("Price is holding above the 20 EMA, showing a strong trend foundation.");
+
+  if (stock.emaBullish)
+    reasons.push("The 5 EMA is above the 20 EMA, signaling short-term momentum is leading upward.");
+
+  if (stock.macdBullish)
+    reasons.push("MACD is above its signal line, confirming bullish momentum is active.");
+
+  if (stock.rsiGood)
+    reasons.push("RSI is in a healthy range, meaning strength without being overextended.");
+
+  if (!stock.volumeGood)
+    reasons.push("Volume is slightly weak, so participation is not fully confirming the move.");
+
+  return reasons.join(" ");
+}
+
+function getQuickIdea(stock) {
+  if (stock.score >= 80)
+    return "Strong setup. Look for continuation or pullback entry.";
+  if (stock.score >= 65)
+    return "Decent setup. Watch for confirmation at open.";
+  return "Weak setup. Stay patient and avoid forcing entries.";
+}
+
+function renderCard(stock) {
+  const verdict =
+    stock.score >= 80 ? "Strong Setup" :
+    stock.score >= 65 ? "Watch" : "Avoid";
+
+  const color =
+    stock.score >= 80 ? "green" :
+    stock.score >= 65 ? "yellow" : "red";
+
+  return `
+  <div class="card" onclick="toggle(this)">
+    
+    <div class="row">
+      <h2>${stock.ticker}</h2>
+      <div class="badge ${color}">${verdict}</div>
+    </div>
+
+    <p>${getQuickIdea(stock)}</p>
+
+    <div class="hidden">
+
+      <div class="section-title">FULL BREAKDOWN</div>
+
+      <p>${getExplanation(stock)}</p>
+
+      <p class="check">${stock.priceAbove20 ? "✓" : "✗"} Price above 20 EMA</p>
+      <p class="${stock.emaBullish ? "check" : "x"}">${stock.emaBullish ? "✓" : "✗"} 5 EMA vs 20 EMA</p>
+      <p class="${stock.macdBullish ? "check" : "x"}">${stock.macdBullish ? "✓" : "✗"} MACD</p>
+      <p class="${stock.rsiGood ? "check" : "x"}">${stock.rsiGood ? "✓" : "✗"} RSI</p>
+      <p class="${stock.volumeGood ? "check" : "x"}">${stock.volumeGood ? "✓" : "✗"} Volume</p>
+
+      <p><b>Quick trade idea:</b> ${getQuickIdea(stock)}</p>
+
+    </div>
+
+  </div>
+  `;
+}
+
+function toggle(card) {
+  const hidden = card.querySelector(".hidden");
+  hidden.classList.toggle("hidden");
+}
+
+function loadSample() {
+  const data = [
+    {
+      ticker: "MRK",
+      score: 85,
+      priceAbove20: true,
+      emaBullish: true,
+      macdBullish: true,
+      rsiGood: true,
+      volumeGood: false
+    },
+    {
+      ticker: "XOM",
+      score: 70,
+      priceAbove20: true,
+      emaBullish: true,
+      macdBullish: true,
+      rsiGood: false,
+      volumeGood: false
     }
+  ];
 
-    function getCacheKey(symbol) {
-      return `${CACHE_PREFIX}:${getMarketDateKey()}:${symbol}`;
-    }
+  document.getElementById("results").innerHTML =
+    data.map(renderCard).join("");
+}
 
-    function saveApiKey() {
-      const key = document.getElementById('apiKey').value.trim();
-      if (!key) {
-        alert('Paste your Twelve Data API key first.');
-        return;
-      }
-      localStorage.setItem('lb_twelve_data_key', key);
-      document.getElementById('status').textContent = 'API key saved in this browser.';
-    }
+</script>
 
-    function loadApiKey() {
-      document.getElementById('apiKey').value = localStorage.getItem('lb_twelve_data_key') || '';
-    }
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    function clearCacheOnly() {
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(CACHE_PREFIX)) localStorage.removeItem(key);
-      });
-    }
-
-    function ema(values, period) {
-      const k = 2 / (period + 1);
-      const out = [];
-      let prev = values[0];
-      out.push(prev);
-      for (let i = 1; i < values.length; i++) {
-        prev = values[i] * k + prev * (1 - k);
-        out.push(prev);
-      }
-      return out;
-    }
-
-    function sma(values, period) {
-      const out = [];
-      for (let i = 0; i < values.length; i++) {
-        if (i < period - 1) { out.push(null); continue; }
-        let sum = 0;
-        for (let j = i - period + 1; j <= i; j++) sum += values[j];
-        out.push(sum / period);
-      }
-      return out;
-    }
-
-    function macd(values, fast = 12, slow = 26, signalPeriod = 9) {
-      const fastEma = ema(values, fast);
-      const slowEma = ema(values, slow);
-      const macdLine = values.map((_, i) => fastEma[i] - slowEma[i]);
-      const signalLine = ema(macdLine, signalPeriod);
-      return { macdLine, signalLine };
-    }
-
-    function rsi(values, period = 14) {
-      const out = new Array(values.length).fill(null);
-      let gains = 0;
-      let losses = 0;
-      for (let i = 1; i <= period; i++) {
-        const diff = values[i] - values[i - 1];
-        if (diff >= 0) gains += diff;
-        else losses -= diff;
-      }
-      let avgGain = gains / period;
-      let avgLoss = losses / period;
-      out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
-      for (let i = period + 1; i < values.length; i++) {
-        const diff = values[i] - values[i - 1];
-        const gain = diff > 0 ? diff : 0;
-        const loss = diff < 0 ? -diff : 0;
-        avgGain = (avgGain * (period - 1) + gain) / period;
-        avgLoss = (avgLoss * (period - 1) + loss) / period;
-        out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
-      }
-      return out;
-    }
-
-    function streakLabel(closes) {
-      if (closes.length < 2) return 'No streak';
-      const direction = closes.at(-1) >= closes.at(-2) ? 'positive' : 'negative';
-      let count = 1;
-      for (let i = closes.length - 1; i > 0; i--) {
-        const diff = closes[i] - closes[i - 1];
-        if (direction === 'positive' && diff >= 0) count++;
-        else if (direction === 'negative' && diff < 0) count++;
-        else break;
-      }
-      return `${count - 1} day${count - 1 === 1 ? '' : 's'} ${direction}`;
-    }
-
-    function normalizeSeries(valuesAsc) {
-      return valuesAsc.map(v => ({
-        open: Number(v.open), high: Number(v.high), low: Number(v.low), close: Number(v.close),
-        volume: Number(v.volume || 0), datetime: v.datetime
-      }));
-    }
-
-    function getVerdictFromScore(score) {
-      if (score >= 80) return 'strong';
-      if (score >= 35) return 'watch';
-      return 'avoid';
-    }
-
-    function getVerdictLabel(verdict) {
-      if (verdict === 'strong') return '🟢 Strong Setup';
-      if (verdict === 'watch') return '🟡 Watch';
-      return '🔴 Avoid';
-    }
-
-    function getConfidence(score) {
-      return Math.max(5, Math.min(99, Math.round(score)));
-    }
-
-    function getQuickTradeIdea(item, isRisky = false) {
-      const { checks } = item;
-      if (isRisky && checks.belowZeroBullish) {
-        return 'Early reversal setup. Let price prove itself before taking a call.';
-      }
-      if (checks.priceAbove20 && checks.emaBullish && checks.macdBullish && checks.volumeBullish) {
-        return 'Watch for a controlled pullback at the open, then strength back above intraday support.';
-      }
-      if (checks.macdBullish || checks.rsiBullish) {
-        return 'Needs more confirmation. Keep it on watch, but do not force an entry.';
-      }
-      return 'Stay away for now. This does not match your setup.';
-    }
-
-    function buildFallbackDescription(item, rank, isRisky = false) {
-      const ticker = item.ticker;
-      const verdict = item.verdict;
-      if (isRisky) {
-        return `${ticker} is the risky pick because momentum is trying to turn before the MACD gets back above zero. It is earlier, less confirmed, and should be treated with patience.`;
-      }
-      if (verdict === 'strong') {
-        return `${ticker} earned rank #${rank} because it matched the strongest blend of trend, momentum, and participation on your list.`;
-      }
-      if (verdict === 'watch') {
-        return `${ticker} has enough going for it to stay on your radar, but not enough alignment to call it a top conviction setup yet.`;
-      }
-      return `${ticker} is not a good pick for your current strategy right now. Stay away from this one until the chart improves.`;
-    }
-
-    function scoreTickerFromBars(ticker, bars) {
-      const closes = bars.map(b => b.close);
-      const volumes = bars.map(b => b.volume);
-      const ema5 = ema(closes, 5);
-      const ema20 = ema(closes, 20);
-      const vol20 = sma(volumes, 20);
-      const { macdLine, signalLine } = macd(closes);
-      const rsi14 = rsi(closes, 14);
-      const i = closes.length - 1;
-      const prev = i - 1;
-
-      const priceAbove20 = closes[i] > ema20[i];
-      const emaBullish = (ema5[i] > ema20[i] && ema5[prev] <= ema20[prev]) || (ema5[i] > ema20[i] && closes[i] > closes[prev]);
-      const macdBullish = (macdLine[i] > signalLine[i] && macdLine[prev] <= signalLine[prev]) || (macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev]);
-      const rsiBullish = rsi14[i] !== null && rsi14[i] >= 50 && rsi14[i] <= 65;
-      const volumeBullish = vol20[i] !== null && volumes[i] > vol20[i];
-      const belowZeroBullish = macdLine[i] < 0 && signalLine[i] < 0 && macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev];
-
-      let score = 0;
-      if (priceAbove20) score += 25;
-      if (emaBullish) score += 20;
-      if (macdBullish) score += 25;
-      if (rsiBullish) score += 15;
-      if (volumeBullish) score += 15;
-
-      let riskyScore = 0;
-      if (belowZeroBullish) riskyScore += 35;
-      if (ema5[i] > ema20[i] || closes[i] > ema20[i]) riskyScore += 20;
-      if (rsi14[i] !== null && rsi14[i] >= 45 && rsi14[i] < 55) riskyScore += 15;
-      if (vol20[i] !== null && volumes[i] > vol20[i]) riskyScore += 15;
-      if (closes[i] > closes[prev]) riskyScore += 15;
-
-      const verdict = getVerdictFromScore(score);
-      const confidence = getConfidence(score);
-
-      return {
-        ticker,
-        closes,
-        score,
-        riskyScore,
-        verdict,
-        confidence,
-        streak: streakLabel(closes),
-        aiSummary: '',
-        aiExplanation: '',
-        aiTradeIdea: '',
-        lastDate: bars[i].datetime,
-        stats: {
-          close: closes[i].toFixed(2),
-          ema5: ema5[i].toFixed(2),
-          ema20: ema20[i].toFixed(2),
-          macd: macdLine[i].toFixed(3),
-          signal: signalLine[i].toFixed(3),
-          rsi: rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
-          volume: volumes[i],
-          volAvg: vol20[i] ? Math.round(vol20[i]) : null
-        },
-        checks: { priceAbove20, emaBullish, macdBullish, rsiBullish, volumeBullish, belowZeroBullish }
-      };
-    }
-
-    async function fetchChunk(symbols, apiKey, forceRefresh = false) {
-      const cached = [];
-      const uncached = [];
-      for (const symbol of symbols) {
-        const raw = localStorage.getItem(getCacheKey(symbol));
-        if (!forceRefresh && raw) {
-          try { cached.push(JSON.parse(raw)); continue; } catch (_) {}
-        }
-        uncached.push(symbol);
-      }
-      if (!uncached.length) return { rows: cached, source: 'cached' };
-
-      const url = `${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || 'Request failed');
-
-      const out = [...cached];
-      const entries = uncached.length === 1 && data?.values ? { [uncached[0]]: data } : data;
-      for (const symbol of uncached) {
-        const item = entries[symbol];
-        if (!item || !item.values) continue;
-        const ascBars = normalizeSeries(item.values.slice().reverse());
-        const scored = scoreTickerFromBars(symbol, ascBars);
-        localStorage.setItem(getCacheKey(symbol), JSON.stringify(scored));
-        out.push(scored);
-      }
-      return { rows: out, source: cached.length ? 'mixed' : 'fresh' };
-    }
-
-    function formatUpdatedTime() {
-      return new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/Chicago',
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', second: '2-digit'
-      }).format(new Date()) + ' CT';
-    }
-
-    async function fetchMarketTrend(apiKey, forceRefresh = false) {
-      const cacheKey = `${CACHE_PREFIX}:${getMarketDateKey()}:MARKET_TREND`;
-      if (!forceRefresh) {
-        const raw = localStorage.getItem(cacheKey);
-        if (raw) {
-          try { return JSON.parse(raw); } catch (_) {}
-        }
-      }
-      const url = `${API_ROOT}?symbol=SPY&interval=1day&outputsize=80&apikey=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!res.ok || !data?.values) return { label: 'unknown', detail: 'SPY unavailable' };
-      const bars = normalizeSeries(data.values.slice().reverse());
-      const closes = bars.map(b => b.close);
-      const ema5 = ema(closes, 5);
-      const ema20 = ema(closes, 20);
-      const { macdLine, signalLine } = macd(closes);
-      const rsi14 = rsi(closes, 14);
-      const i = closes.length - 1;
-      let label = 'neutral';
-      if (closes[i] > ema20[i] && ema5[i] > ema20[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) label = 'bullish';
-      else if (closes[i] < ema20[i] && ema5[i] < ema20[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) label = 'bearish';
-      const result = { label, detail: `SPY ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'}` };
-      localStorage.setItem(cacheKey, JSON.stringify(result));
-      return result;
-    }
-
-    function updateMetaInfo(updatedAt, dataSource, marketTrend) {
-      const trendText = marketTrend ? `${marketTrend.label}${marketTrend.detail ? ` (${marketTrend.detail})` : ''}` : '--';
-      document.getElementById('metaInfo').textContent = `Last updated: ${updatedAt || '--'} · Data source: ${dataSource || '--'} · Market trend: ${trendText}`;
-    }
-
-    async function getAIAnalysis(item, rank = null, isRisky = false) {
-      try {
-        const marketTrendText = document.getElementById('metaInfo').textContent;
-        const res = await fetch(`${AI_BACKEND_URL}/analyze-stock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ticker: item.ticker,
-            rank,
-            verdict: isRisky ? 'watch' : item.verdict,
-            confidence: isRisky ? getConfidence(item.riskyScore) : item.confidence,
-            streak: item.streak,
-            marketTrend: marketTrendText,
-            isRisky,
-            checks: item.checks,
-            stats: item.stats
-          })
-        });
-
-        if (!res.ok) {
-          throw new Error(`AI backend failed: ${res.status}`);
-        }
-
-        return await res.json();
-      } catch (error) {
-        return {
-          verdict_title: getVerdictLabel(isRisky ? 'watch' : item.verdict),
-          summary_line: isRisky
-            ? 'Early setup. Interesting, but not fully confirmed yet.'
-            : (item.verdict === 'avoid'
-              ? 'Stay away from this one right now.'
-              : item.verdict === 'watch'
-                ? 'Keep this on watch, but it still needs more confirmation.'
-                : 'One of the cleaner names on the board right now.'),
-          full_explanation: buildFallbackDescription(item, rank, isRisky),
-          trade_idea: getQuickTradeIdea(item, isRisky),
-          what_changed: ''
-        };
-      }
-    }
-
-    function renderIndicators(item, isRisky = false) {
-      const checks = [
-        ['Price above 20 EMA', item.checks.priceAbove20],
-        ['5 EMA bullish vs 20 EMA', item.checks.emaBullish],
-        ['MACD bullish', item.checks.macdBullish],
-        ['RSI in target range', item.checks.rsiBullish],
-        ['Volume above average', item.checks.volumeBullish]
-      ];
-      if (isRisky) checks.push(['Below-zero bullish setup', item.checks.belowZeroBullish]);
-      return checks.map(([label, pass]) => `<div class="indicator-row"><span class="${pass ? 'check' : 'xmark'}">${pass ? '✓' : '✕'}</span><span>${label}</span></div>`).join('');
-    }
-
-    function renderStats(item) {
-      return `
-        <div class="stats-grid">
-          <div class="stat-chip">Close: ${item.stats.close}</div>
-          <div class="stat-chip">RSI: ${item.stats.rsi}</div>
-          <div class="stat-chip">5 EMA: ${item.stats.ema5}</div>
-          <div class="stat-chip">20 EMA: ${item.stats.ema20}</div>
-          <div class="stat-chip">MACD: ${item.stats.macd}</div>
-          <div class="stat-chip">Signal: ${item.stats.signal}</div>
-        </div>
-      `;
-    }
-
-    function renderCard(item, options = {}) {
-      const { isRisky = false, rank = null, expanded = false, topHighlight = false } = options;
-      const card = document.createElement('div');
-      card.className = `stock-card clickable ${topHighlight ? 'top-highlight' : ''}`;
-      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank || 'single'}-${Math.random().toString(36).slice(2,7)}`;
-      const verdict = isRisky ? 'watch' : item.verdict;
-      const verdictLabel = getVerdictLabel(verdict);
-      const verdictClass = verdict === 'strong' ? 'verdict-strong' : verdict === 'watch' ? 'verdict-watch' : 'verdict-avoid';
-      const quickIdea = item.aiTradeIdea || getQuickTradeIdea(item, isRisky);
-      const description = buildFallbackDescription(item, rank, isRisky);
-      const summaryLine = item.aiSummary || (
-        isRisky
-          ? 'Early setup. Interesting, but not fully confirmed yet.'
-          : (item.verdict === 'avoid'
-            ? 'Stay away from this one right now.'
-            : item.verdict === 'watch'
-              ? 'Keep this on watch, but it still needs more confirmation.'
-              : 'One of the cleaner names on the board right now.')
-      );
-      const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
-      const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
-
-      card.innerHTML = `
-        <div class="stock-top">
-          <div class="stock-left">
-            ${badge}
-            <div class="ticker-wrap">
-              <div class="ticker">${item.ticker}</div>
-              <div class="subline">${item.lastDate} · ${item.streak}</div>
-            </div>
-          </div>
-          <div class="stock-right">
-            <div class="verdict ${verdictClass}">${verdictLabel}</div>
-            <div class="confidence">${confidence}%</div>
-          </div>
-        </div>
-        <div class="quick-line">${topHighlight ? '🔥 Best setup today. ' : ''}${summaryLine}</div>
-        <div class="tap-line">Tap for full details</div>
-        <div id="${summaryId}" class="detail-panel" style="display:${expanded ? 'block' : 'none'};">
-          <div class="detail-title">Full Breakdown</div>
-          <div class="detail-text">${description}</div>
-          <div class="detail-grid">${renderIndicators(item, isRisky)}</div>
-          ${renderStats(item)}
-          <div class="detail-text quick-trade-line" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${quickIdea}</div>
-          <div class="ai-breakdown">
-            <div class="ai-chip">AI-enhanced explanation</div>
-            <div class="ai-title">AI Breakdown</div>
-            <div class="detail-text ai-detail-text">Loading deeper AI explanation...</div>
-          </div>
-        </div>
-      `;
-
-      card.addEventListener('click', async () => {
-        const panel = card.querySelector(`#${summaryId}`);
-        const alreadyLoaded = panel.dataset.aiLoaded === 'true';
-
-        if (panel.style.display !== 'block') {
-          panel.style.display = 'block';
-        }
-
-        if (!alreadyLoaded) {
-          const aiDetailText = panel.querySelector('.ai-detail-text');
-          aiDetailText.textContent = 'Loading AI explanation...';
-
-          const ai = await getAIAnalysis(item, rank, isRisky);
-          item.aiSummary = ai.summary_line || item.aiSummary;
-          item.aiExplanation = ai.full_explanation || item.aiExplanation;
-          item.aiTradeIdea = ai.trade_idea || item.aiTradeIdea;
-
-          const quickLine = card.querySelector('.quick-line');
-          quickLine.textContent = `${topHighlight ? '🔥 Best setup today. ' : ''}${item.aiSummary}`;
-
-          aiDetailText.textContent = item.aiExplanation || 'No AI explanation returned.';
-          panel.querySelector('.quick-trade-line').innerHTML = `<strong>Quick trade idea:</strong> ${item.aiTradeIdea}`;
-          panel.dataset.aiLoaded = 'true';
-        } else {
-          panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-      });
-
-      return card;
-    }
-
-    function loadSavedBundle() {
-      const raw = localStorage.getItem('lb_saved_picks');
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch (_) { return null; }
-    }
-
-    function renderSavedPicksOnly() {
-      const savedEl = document.getElementById('savedPicks');
-      savedEl.innerHTML = '';
-      const saved = loadSavedBundle();
-      if (!saved) {
-        savedEl.innerHTML = '<div class="note-card">No saved picks yet. Run Night Scan first, then come back in the morning and use Check My Picks.</div>';
-        return;
-      }
-      saved.ranked.forEach((item, idx) => savedEl.appendChild(renderCard(item, { rank: idx + 1 })));
-      if (saved.risky) savedEl.appendChild(renderCard(saved.risky, { isRisky: true }));
-    }
-
-    async function runScan(forceRefresh = false) {
-      const apiKey = document.getElementById('apiKey').value.trim();
-      const status = document.getElementById('status');
-      const topFive = document.getElementById('topFive');
-      const riskyOne = document.getElementById('riskyOne');
-      topFive.innerHTML = '';
-      riskyOne.innerHTML = '';
-      if (!apiKey) {
-        status.textContent = 'Paste and save your Twelve Data API key first.';
-        return;
-      }
-      status.textContent = forceRefresh ? 'Force refreshing watchlist...' : 'Scanning watchlist...';
-      updateMetaInfo('--', forceRefresh ? 'fresh requested' : '--', null);
-
-      const all = [];
-      const sourcesSeen = new Set();
-      const chunks = [];
-      for (let i = 0; i < WATCHLIST.length; i += BATCH_SIZE) chunks.push(WATCHLIST.slice(i, i + BATCH_SIZE));
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        status.textContent = `${forceRefresh ? 'Refreshing' : 'Scanning'} batch ${i + 1} of ${chunks.length}... ${chunk.join(', ')}`;
-        try {
-          const result = await fetchChunk(chunk, apiKey, forceRefresh);
-          sourcesSeen.add(result.source);
-          result.rows.forEach(row => {
-            const existing = all.findIndex(x => x.ticker === row.ticker);
-            if (existing >= 0) all[existing] = row;
-            else all.push(row);
-          });
-        } catch (err) {
-          status.textContent = `Error on batch ${i + 1}: ${err.message}`;
-          updateMetaInfo(formatUpdatedTime(), 'error', null);
-          return;
-        }
-        if (i < chunks.length - 1) {
-          status.textContent = `Batch ${i + 1} complete. Waiting about 30 seconds to stay inside the API limit...`;
-          await sleep(BATCH_DELAY_MS);
-        }
-      }
-
-      let marketTrend = null;
-      try { marketTrend = await fetchMarketTrend(apiKey, forceRefresh); } catch (_) {}
-
-      const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
-      const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
-
-      localStorage.setItem('lb_saved_picks', JSON.stringify({ ranked, risky, savedAt: new Date().toISOString() }));
-
-      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, { rank: idx + 1, topHighlight: idx === 0 })));
-      if (risky) riskyOne.appendChild(renderCard(risky, { isRisky: true }));
-
-      let dataSource = 'cached';
-      if (sourcesSeen.has('fresh') && sourcesSeen.size === 1) dataSource = 'fresh';
-      else if (sourcesSeen.has('mixed') || (sourcesSeen.has('fresh') && sourcesSeen.has('cached'))) dataSource = 'mixed';
-      else if (forceRefresh) dataSource = 'fresh requested';
-
-      status.textContent = `Done. Ranked ${all.length} tickers and saved your picks.`;
-      updateMetaInfo(formatUpdatedTime(), dataSource, marketTrend);
-      renderSavedPicksOnly();
-    }
-
-    async function checkSingleTicker() {
-      const apiKey = document.getElementById('apiKey').value.trim();
-      const ticker = document.getElementById('singleTickerInput').value.trim().toUpperCase();
-      const resultEl = document.getElementById('singleTickerResult');
-      resultEl.innerHTML = '';
-      if (!apiKey || !ticker) {
-        resultEl.innerHTML = '<div class="note-card">Enter your API key and a ticker symbol first.</div>';
-        return;
-      }
-      document.getElementById('status').textContent = `Checking ${ticker}...`;
-      try {
-        const result = await fetchChunk([ticker], apiKey, true);
-        const item = result.rows[0];
-        if (!item) {
-          resultEl.innerHTML = `<div class="note-card">No data returned for ${ticker}.</div>`;
-          return;
-        }
-
-        const ai = await getAIAnalysis(item, null, false);
-        item.aiSummary = ai.summary_line || '';
-        item.aiExplanation = ai.full_explanation || '';
-        item.aiTradeIdea = ai.trade_idea || '';
-
-        resultEl.appendChild(renderCard(item, { expanded: true }));
-        document.getElementById('status').textContent = `${ticker} checked.`;
-      } catch (err) {
-        resultEl.innerHTML = `<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;
-        document.getElementById('status').textContent = `Could not check ${ticker}.`;
-      }
-    }
-
-    const buttons = document.querySelectorAll('button');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        btn.classList.add('button-active');
-        setTimeout(() => btn.classList.remove('button-active'), 550);
-      });
-    });
-
-    document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
-    document.getElementById('showBtn').addEventListener('click', () => runScan(false));
-    document.getElementById('morningBtn').addEventListener('click', () => {
-      renderSavedPicksOnly();
-      const section = document.getElementById('savedPicksSection');
-      if (section) {
-        section.classList.remove('flash');
-        void section.offsetWidth;
-        section.classList.add('flash');
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      clearCacheOnly();
-      updateMetaInfo('--', 'cache cleared', null);
-      runScan(true);
-    });
-    document.getElementById('checkTickerBtn').addEventListener('click', checkSingleTicker);
-
-    loadApiKey();
-    renderSavedPicksOnly();
-  </script>
 </body>
 </html>
