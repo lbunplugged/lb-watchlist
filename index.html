@@ -14,6 +14,7 @@
       --good: #37d67a;
       --bad: #ff5c5c;
       --warn: #f5b942;
+      --blue: #3b82f6;
     }
     * { box-sizing: border-box; }
     body {
@@ -23,14 +24,14 @@
       font-family: Arial, Helvetica, sans-serif;
     }
     .wrap {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 24px;
     }
     h1 {
       margin: 0 0 8px;
-      font-size: 32px;
-      letter-spacing: 0.08em;
+      font-size: 44px;
+      letter-spacing: 0.04em;
     }
     p {
       color: var(--muted);
@@ -40,7 +41,7 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin: 20px 0 24px;
+      margin: 20px 0 16px;
     }
     button {
       background: #111;
@@ -53,10 +54,39 @@
       font-weight: 700;
     }
     button:hover { background: #171717; }
+    input[type="password"], input[type="text"] {
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 14px 14px;
+      border-radius: 10px;
+      min-width: 240px;
+      flex: 1;
+    }
     .status {
       color: var(--muted);
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       min-height: 20px;
+    }
+    .meta {
+      color: var(--muted);
+      margin-bottom: 18px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .section-title {
+      margin: 28px 0 12px;
+      font-size: 20px;
+      color: #fff;
+      letter-spacing: 0.03em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr; }
     }
     .card {
       background: var(--panel);
@@ -65,6 +95,8 @@
       padding: 16px;
       margin-bottom: 14px;
     }
+    .clickable-card { cursor: pointer; }
+    .clickable-card:hover { border-color: #3a3a3a; background: #101010; }
     .row {
       display: flex;
       justify-content: space-between;
@@ -90,31 +122,37 @@
     .good { color: var(--good); }
     .bad { color: var(--bad); }
     .warn { color: var(--warn); }
+    .blue { color: var(--blue); }
     .reason {
       margin-top: 12px;
       line-height: 1.5;
       color: #e9e9e9;
     }
     .small { font-size: 13px; color: var(--muted); }
-    .section-title {
-      margin: 28px 0 12px;
-      font-size: 18px;
-      color: #fff;
-      letter-spacing: 0.04em;
+    .detail-panel {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #222;
     }
-    .grid {
+    .indicator-list {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 8px;
+      margin-top: 12px;
     }
-    @media (min-width: 820px) {
-      .grid { grid-template-columns: 1fr 1fr; }
+    .indicator-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
     }
+    .check { color: var(--good); font-weight: 700; }
+    .xmark { color: var(--bad); font-weight: 700; }
     .footer {
       margin-top: 28px;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     code {
       color: #ddd;
@@ -122,31 +160,28 @@
       padding: 2px 6px;
       border-radius: 6px;
     }
-    input[type="password"] {
-      background: #111;
-      color: #fff;
-      border: 1px solid #333;
-      padding: 14px 14px;
-      border-radius: 10px;
-      min-width: 280px;
-      flex: 1;
-    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>LB's Watch List</h1>
-    <p>Simple scanner for your style: MACD + RSI + 5 EMA + 20 EMA + Volume, plus one risky setup below zero. Ranked from best to least based on your setup.</p>
+    <p>Night scan, saved picks, single ticker check, and click-to-open details with indicator checkmarks.</p>
 
     <div class="toolbar">
-      <input id="apiKey" type="password" placeholder="Paste your free Twelve Data API key" />
+      <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
       <button id="saveKeyBtn">SAVE KEY</button>
-      <button id="showBtn">SHOW ME</button>
-      <button onclick="clearCache()">FORCE REFRESH</button>
+      <button id="showBtn">NIGHT SCAN</button>
+      <button id="morningBtn">CHECK MY PICKS</button>
+      <button id="refreshBtn">FORCE REFRESH</button>
+    </div>
+
+    <div class="toolbar" style="margin-top:0;">
+      <input id="singleTickerInput" type="text" placeholder="Enter ticker symbol" />
+      <button id="checkTickerBtn">CHECK TICKER</button>
     </div>
 
     <div class="status" id="status">Ready. Save your API key, then scan.</div>
-    <div class="small" id="metaInfo" style="margin-bottom:18px;">Last updated: -- · Data source: -- · Market trend: --</div>
+    <div class="meta" id="metaInfo">Last updated: -- · Data source: -- · Market trend: --</div>
 
     <div class="section-title">Top 5 Ranked Setups</div>
     <div id="topFive" class="grid"></div>
@@ -154,8 +189,14 @@
     <div class="section-title">Bonus Risky Setup</div>
     <div id="riskyOne"></div>
 
+    <div class="section-title">Saved Picks Morning Check</div>
+    <div id="savedPicks" class="grid"></div>
+
+    <div class="section-title">Single Ticker Check</div>
+    <div id="singleTickerResult"></div>
+
     <div class="footer">
-      This version is built for free end-of-day use with Twelve Data. Save your personal API key, then scan the watchlist. To stay within the free Basic plan limits, the scanner works in small batches and caches each symbol for the current market day, so later scans that same night are much faster. The consistency label shows the current streak, like <code>2 days positive</code> or <code>1 day negative</code>, based on recent daily closes.
+      This version is built for a cleaner workflow. <strong>Night Scan</strong> ranks the list and saves your picks. <strong>Check My Picks</strong> brings those saved names back in the morning so you are not replacing them with a fresh list. Tap any card to see why it qualified and which indicators passed.
     </div>
   </div>
 
@@ -169,33 +210,21 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const QUOTE_ROOT = 'https://api.twelvedata.com/quote';
-    const CACHE_PREFIX = 'lb-watchlist-cache-v2';
-    const BATCH_SIZE = 8;
-    const BATCH_DELAY_MS = 65000;
+    const CACHE_PREFIX = 'lb-watchlist-cache-v3';
+    const BATCH_SIZE = 5;
+    const BATCH_DELAY_MS = 75000;
     const OUTPUTSIZE = 80;
 
     function getMarketDateKey() {
       const now = new Date();
-
       const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/New_York',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        hour12: false
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false
       });
-
       const parts = formatter.formatToParts(now);
       const date = `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}-${parts.find(p => p.type === 'day').value}`;
       const hour = parseInt(parts.find(p => p.type === 'hour').value, 10);
-
-      if (hour >= 16) {
-        return date + '-afterclose';
-      }
-
-      return date;
+      return hour >= 16 ? date + '-afterclose' : date;
     }
 
     function getCacheKey(symbol) {
@@ -213,21 +242,17 @@
     }
 
     function loadApiKey() {
-      const key = localStorage.getItem('lb_twelve_data_key') || '';
-      document.getElementById('apiKey').value = key;
+      document.getElementById('apiKey').value = localStorage.getItem('lb_twelve_data_key') || '';
     }
 
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    function clearCache() {
+    function clearCacheOnly() {
       Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(CACHE_PREFIX)) {
-          localStorage.removeItem(key);
-        }
+        if (key.startsWith(CACHE_PREFIX)) localStorage.removeItem(key);
       });
-      alert('Cache cleared. Next run will fetch fresh data.');
     }
 
     function ema(values, period) {
@@ -245,10 +270,7 @@
     function sma(values, period) {
       const out = [];
       for (let i = 0; i < values.length; i++) {
-        if (i < period - 1) {
-          out.push(null);
-          continue;
-        }
+        if (i < period - 1) { out.push(null); continue; }
         let sum = 0;
         for (let j = i - period + 1; j <= i; j++) sum += values[j];
         out.push(sum / period);
@@ -261,25 +283,21 @@
       const slowEma = ema(values, slow);
       const macdLine = values.map((_, i) => fastEma[i] - slowEma[i]);
       const signalLine = ema(macdLine, signalPeriod);
-      const hist = macdLine.map((v, i) => v - signalLine[i]);
-      return { macdLine, signalLine, hist };
+      return { macdLine, signalLine };
     }
 
     function rsi(values, period = 14) {
       const out = new Array(values.length).fill(null);
       let gains = 0;
       let losses = 0;
-
       for (let i = 1; i <= period; i++) {
         const diff = values[i] - values[i - 1];
         if (diff >= 0) gains += diff;
         else losses -= diff;
       }
-
       let avgGain = gains / period;
       let avgLoss = losses / period;
       out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
-
       for (let i = period + 1; i < values.length; i++) {
         const diff = values[i] - values[i - 1];
         const gain = diff > 0 ? diff : 0;
@@ -288,34 +306,26 @@
         avgLoss = (avgLoss * (period - 1) + loss) / period;
         out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
       }
-
       return out;
     }
 
     function streakLabel(closes) {
       if (closes.length < 2) return 'no streak';
-      const lastDiff = closes[closes.length - 1] - closes[closes.length - 2];
-      const direction = lastDiff >= 0 ? 'positive' : 'negative';
+      const direction = closes.at(-1) >= closes.at(-2) ? 'positive' : 'negative';
       let count = 1;
-
       for (let i = closes.length - 1; i > 0; i--) {
         const diff = closes[i] - closes[i - 1];
         if (direction === 'positive' && diff >= 0) count++;
         else if (direction === 'negative' && diff < 0) count++;
         else break;
       }
-
       return `${count - 1} day${count - 1 === 1 ? '' : 's'} ${direction}`;
     }
 
     function normalizeSeries(valuesAsc) {
       return valuesAsc.map(v => ({
-        open: Number(v.open),
-        high: Number(v.high),
-        low: Number(v.low),
-        close: Number(v.close),
-        volume: Number(v.volume || 0),
-        datetime: v.datetime
+        open: Number(v.open), high: Number(v.high), low: Number(v.low), close: Number(v.close),
+        volume: Number(v.volume || 0), datetime: v.datetime
       }));
     }
 
@@ -331,22 +341,11 @@
       const prev = i - 1;
 
       const priceAbove20 = closes[i] > ema20[i];
-      const emaBullish =
-        (ema5[i] > ema20[i] && ema5[prev] <= ema20[prev]) ||
-        (ema5[i] > ema20[i] && closes[i] > closes[prev]);
-
-      const macdBullish =
-        (macdLine[i] > signalLine[i] && macdLine[prev] <= signalLine[prev]) ||
-        (macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev]);
-
+      const emaBullish = (ema5[i] > ema20[i] && ema5[prev] <= ema20[prev]) || (ema5[i] > ema20[i] && closes[i] > closes[prev]);
+      const macdBullish = (macdLine[i] > signalLine[i] && macdLine[prev] <= signalLine[prev]) || (macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev]);
       const rsiBullish = rsi14[i] !== null && rsi14[i] >= 50 && rsi14[i] <= 65;
       const volumeBullish = vol20[i] !== null && volumes[i] > vol20[i];
-
-      const belowZeroBullish =
-        macdLine[i] < 0 &&
-        signalLine[i] < 0 &&
-        macdLine[i] > signalLine[i] &&
-        macdLine[i] > macdLine[prev];
+      const belowZeroBullish = macdLine[i] < 0 && signalLine[i] < 0 && macdLine[i] > signalLine[i] && macdLine[i] > macdLine[prev];
 
       let score = 0;
       if (priceAbove20) score += 25;
@@ -394,40 +393,30 @@
           rsi: rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
           volume: volumes[i],
           volAvg: vol20[i] ? Math.round(vol20[i]) : null
-        }
+        },
+        checks: { priceAbove20, emaBullish, macdBullish, rsiBullish, volumeBullish, belowZeroBullish }
       };
     }
 
     async function fetchChunk(symbols, apiKey, forceRefresh = false) {
       const cached = [];
       const uncached = [];
-
       for (const symbol of symbols) {
         const raw = localStorage.getItem(getCacheKey(symbol));
         if (!forceRefresh && raw) {
-          try {
-            cached.push(JSON.parse(raw));
-            continue;
-          } catch (_) {}
+          try { cached.push(JSON.parse(raw)); continue; } catch (_) {}
         }
         uncached.push(symbol);
       }
-
-      if (!uncached.length) {
-        return { rows: cached, source: 'cached' };
-      }
+      if (!uncached.length) return { rows: cached, source: 'cached' };
 
       const url = `${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url);
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || 'Request failed');
-      }
+      if (!res.ok) throw new Error(data?.message || 'Request failed');
 
       const out = [...cached];
       const entries = uncached.length === 1 && data?.values ? { [uncached[0]]: data } : data;
-
       for (const symbol of uncached) {
         const item = entries[symbol];
         if (!item || !item.values) continue;
@@ -436,40 +425,28 @@
         localStorage.setItem(getCacheKey(symbol), JSON.stringify(scored));
         out.push(scored);
       }
-
       return { rows: out, source: cached.length ? 'mixed' : 'fresh' };
     }
 
     function formatUpdatedTime() {
       return new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/Chicago',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit'
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', second: '2-digit'
       }).format(new Date()) + ' CT';
     }
 
     async function fetchMarketTrend(apiKey, forceRefresh = false) {
       const cacheKey = `${CACHE_PREFIX}:${getMarketDateKey()}:MARKET_TREND`;
-
       if (!forceRefresh) {
         const raw = localStorage.getItem(cacheKey);
         if (raw) {
           try { return JSON.parse(raw); } catch (_) {}
         }
       }
-
-      const url = `${API_ROOT}?symbol=${encodeURIComponent('SPY')}&interval=1day&outputsize=80&apikey=${encodeURIComponent(apiKey)}`;
+      const url = `${API_ROOT}?symbol=SPY&interval=1day&outputsize=80&apikey=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url);
       const data = await res.json();
-
-      if (!res.ok || !data?.values) {
-        return { label: 'unknown', detail: 'SPY unavailable', source: 'unknown' };
-      }
-
+      if (!res.ok || !data?.values) return { label: 'unknown', detail: 'SPY unavailable' };
       const bars = normalizeSeries(data.values.slice().reverse());
       const closes = bars.map(b => b.close);
       const ema5 = ema(closes, 5);
@@ -477,54 +454,46 @@
       const { macdLine, signalLine } = macd(closes);
       const rsi14 = rsi(closes, 14);
       const i = closes.length - 1;
-
       let label = 'neutral';
-
-      if (closes[i] > ema20[i] && ema5[i] > ema20[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) {
-        label = 'bullish';
-      } else if (closes[i] < ema20[i] && ema5[i] < ema20[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) {
-        label = 'bearish';
-      }
-
-      const result = {
-        label,
-        detail: `SPY close ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'} · MACD ${macdLine[i].toFixed(3)} vs ${signalLine[i].toFixed(3)}`,
-        source: 'fresh'
-      };
-
+      if (closes[i] > ema20[i] && ema5[i] > ema20[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) label = 'bullish';
+      else if (closes[i] < ema20[i] && ema5[i] < ema20[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) label = 'bearish';
+      const result = { label, detail: `SPY close ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'} · MACD ${macdLine[i].toFixed(3)} vs ${signalLine[i].toFixed(3)}` };
       localStorage.setItem(cacheKey, JSON.stringify(result));
       return result;
     }
 
     function updateMetaInfo(updatedAt, dataSource, marketTrend) {
-      const el = document.getElementById('metaInfo');
       const trendText = marketTrend ? `${marketTrend.label}${marketTrend.detail ? ` (${marketTrend.detail})` : ''}` : '--';
-      el.textContent = `Last updated: ${updatedAt || '--'} · Data source: ${dataSource || '--'} · Market trend: ${trendText}`;
+      document.getElementById('metaInfo').textContent = `Last updated: ${updatedAt || '--'} · Data source: ${dataSource || '--'} · Market trend: ${trendText}`;
     }
 
     function winnerParagraph(item, rank, isRisky = false) {
       const reasons = isRisky ? item.riskyReasons : item.reasons;
-
       const opening = isRisky
-        ? `${item.ticker} is the bonus risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier and less confirmed than the main top 5, but it can be the kind of setup that gets a stronger run if buyers keep stepping in.`
-        : `${item.ticker} comes in at rank #${rank} because it matches more of your setup than most names on the watchlist. The chart is showing a stronger combination of trend, momentum, and participation, which is what you want for a short call option hold.`;
-
-      const detailParts = [];
-      if (reasons.length) detailParts.push(`Main reasons: ${reasons.join(', ')}.`);
-      detailParts.push(`Right now the streak shows ${item.streak}, which helps you quickly see whether price has been stacking green days or bleeding lower.`);
-      detailParts.push(`This scan is based on the latest finished daily bar dated ${item.lastDate}. It should be treated as a watchlist rank, not an automatic buy signal.`);
-
-      return `${opening} ${detailParts.join(' ')}`;
+        ? `${item.ticker} is the bonus risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier and less confirmed than the main top picks, but it can run harder if buyers keep stepping in.`
+        : `${item.ticker} ranked ${rank ? '#' + rank : 'high'} because it matched more of your setup than most names on the watchlist. Trend, momentum, and participation lined up better here than in weaker names.`;
+      return `${opening} Main reasons: ${reasons.join(', ') || 'none listed'}. The streak is ${item.streak}, so you can quickly see whether price has been stacking green days or fading lower. This is a watchlist rank, not an automatic buy signal.`;
     }
 
-    function renderCard(item, isRisky = false, rank = null) {
+    function renderIndicators(item, isRisky = false) {
+      const checks = [
+        ['Price above 20 EMA', item.checks.priceAbove20],
+        ['5 EMA bullish vs 20 EMA', item.checks.emaBullish],
+        ['MACD bullish', item.checks.macdBullish],
+        ['RSI in target range', item.checks.rsiBullish],
+        ['Volume above average', item.checks.volumeBullish]
+      ];
+      if (isRisky) checks.push(['Below-zero bullish setup', item.checks.belowZeroBullish]);
+      return checks.map(([label, pass]) => `<div class="indicator-row"><span class="${pass ? 'check' : 'xmark'}">${pass ? '✓' : '✕'}</span><span>${label}</span></div>`).join('');
+    }
+
+    function renderCard(item, isRisky = false, rank = null, expanded = false) {
       const div = document.createElement('div');
-      div.className = 'card';
+      div.className = 'card clickable-card';
       const streakClass = item.streak.includes('positive') ? 'good' : 'bad';
       const reasonText = (isRisky ? item.riskyReasons : item.reasons).join(', ') || 'No strong reason found';
-      const title = isRisky ? item.ticker : `#${rank} ${item.ticker}`;
-      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank}`;
-
+      const title = isRisky ? item.ticker : `${rank ? '#' + rank + ' ' : ''}${item.ticker}`;
+      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank || 'single'}`;
       div.innerHTML = `
         <div class="row">
           <div>
@@ -533,27 +502,39 @@
           </div>
           <div>
             <span class="tag ${streakClass}">${item.streak}</span>
-            ${isRisky ? '<span class="tag warn">risky below-zero setup</span>' : '<span class="tag good">top setup</span>'}
+            ${isRisky ? '<span class="tag warn">risky below-zero setup</span>' : '<span class="tag blue">tap for details</span>'}
           </div>
         </div>
         <div class="reason"><strong>Why:</strong> ${reasonText}</div>
         <div class="small" style="margin-top:10px;">MACD ${item.stats.macd} vs Signal ${item.stats.signal} · RSI ${item.stats.rsi} · Vol ${Number(item.stats.volume).toLocaleString()} ${item.stats.volAvg ? `vs avg ${Number(item.stats.volAvg).toLocaleString()}` : ''}</div>
-        <div style="margin-top:14px;">
-          <button class="explain-btn" data-summary-id="${summaryId}">${isRisky ? 'Why this risky setup?' : 'Why is this a winner?'}</button>
+        <div id="${summaryId}" class="detail-panel reason" style="display:${expanded ? 'block' : 'none'};">
+          <div><strong>${isRisky ? 'Why this risky setup' : 'Why this is a good pick'}:</strong> ${winnerParagraph(item, rank, isRisky)}</div>
+          <div class="indicator-list">${renderIndicators(item, isRisky)}</div>
         </div>
-        <div id="${summaryId}" class="reason" style="display:none; margin-top:12px;">${winnerParagraph(item, rank, isRisky)}</div>
       `;
-
-      const btn = div.querySelector('.explain-btn');
-      const summary = div.querySelector(`#${summaryId}`);
-
-      btn.addEventListener('click', () => {
-        const isOpen = summary.style.display === 'block';
-        summary.style.display = isOpen ? 'none' : 'block';
-        btn.textContent = isOpen ? (isRisky ? 'Why this risky setup?' : 'Why is this a winner?') : 'Hide explanation';
+      div.addEventListener('click', () => {
+        const detail = div.querySelector(`#${summaryId}`);
+        detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
       });
-
       return div;
+    }
+
+    function loadSavedBundle() {
+      const raw = localStorage.getItem('lb_saved_picks');
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch (_) { return null; }
+    }
+
+    function renderSavedPicksOnly() {
+      const savedEl = document.getElementById('savedPicks');
+      savedEl.innerHTML = '';
+      const saved = loadSavedBundle();
+      if (!saved) {
+        savedEl.innerHTML = '<div class="card"><div class="reason">No saved picks yet. Run Night Scan first, then come back in the morning and use Check My Picks.</div></div>';
+        return;
+      }
+      saved.ranked.forEach((item, idx) => savedEl.appendChild(renderCard(item, false, idx + 1, true)));
+      if (saved.risky) savedEl.appendChild(renderCard(saved.risky, true, null, true));
     }
 
     async function runScan(forceRefresh = false) {
@@ -561,58 +542,48 @@
       const status = document.getElementById('status');
       const topFive = document.getElementById('topFive');
       const riskyOne = document.getElementById('riskyOne');
-
       topFive.innerHTML = '';
       riskyOne.innerHTML = '';
-
       if (!apiKey) {
         status.textContent = 'Paste and save your Twelve Data API key first.';
         return;
       }
-
       status.textContent = forceRefresh ? 'Force refreshing watchlist...' : 'Scanning watchlist...';
       updateMetaInfo('--', forceRefresh ? 'fresh requested' : '--', null);
 
       const all = [];
-      const chunks = [];
       const sourcesSeen = new Set();
-
-      for (let i = 0; i < WATCHLIST.length; i += BATCH_SIZE) {
-        chunks.push(WATCHLIST.slice(i, i + BATCH_SIZE));
-      }
+      const chunks = [];
+      for (let i = 0; i < WATCHLIST.length; i += BATCH_SIZE) chunks.push(WATCHLIST.slice(i, i + BATCH_SIZE));
 
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         status.textContent = `${forceRefresh ? 'Refreshing' : 'Scanning'} batch ${i + 1} of ${chunks.length}... ${chunk.join(', ')}`;
-
         try {
           const result = await fetchChunk(chunk, apiKey, forceRefresh);
           sourcesSeen.add(result.source);
-
-          for (const row of result.rows) {
-            const existingIndex = all.findIndex(x => x.ticker === row.ticker);
-            if (existingIndex >= 0) all[existingIndex] = row;
+          result.rows.forEach(row => {
+            const existing = all.findIndex(x => x.ticker === row.ticker);
+            if (existing >= 0) all[existing] = row;
             else all.push(row);
-          }
+          });
         } catch (err) {
           status.textContent = `Error on batch ${i + 1}: ${err.message}`;
           updateMetaInfo(formatUpdatedTime(), 'error', null);
           return;
         }
-
         if (i < chunks.length - 1) {
-          status.textContent = `Batch ${i + 1} complete. Waiting about 65 seconds to stay inside the free API limit...`;
+          status.textContent = `Batch ${i + 1} complete. Waiting about 75 seconds to stay inside the API limit...`;
           await sleep(BATCH_DELAY_MS);
         }
       }
 
       let marketTrend = null;
-      try {
-        marketTrend = await fetchMarketTrend(apiKey, forceRefresh);
-      } catch (_) {}
+      try { marketTrend = await fetchMarketTrend(apiKey, forceRefresh); } catch (_) {}
 
       const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
       const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
+      localStorage.setItem('lb_saved_picks', JSON.stringify({ ranked, risky, savedAt: new Date().toISOString() }));
 
       ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, false, idx + 1)));
       if (risky) riskyOne.appendChild(renderCard(risky, true));
@@ -622,20 +593,48 @@
       else if (sourcesSeen.has('mixed') || (sourcesSeen.has('fresh') && sourcesSeen.has('cached'))) dataSource = 'mixed';
       else if (forceRefresh) dataSource = 'fresh requested';
 
-      status.textContent = `Done. Ranked ${all.length} tickers using the latest cached or fetched daily data.`;
+      status.textContent = `Done. Ranked ${all.length} tickers and saved your picks.`;
       updateMetaInfo(formatUpdatedTime(), dataSource, marketTrend);
+      renderSavedPicksOnly();
+    }
+
+    async function checkSingleTicker() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const ticker = document.getElementById('singleTickerInput').value.trim().toUpperCase();
+      const resultEl = document.getElementById('singleTickerResult');
+      resultEl.innerHTML = '';
+      if (!apiKey || !ticker) {
+        resultEl.innerHTML = '<div class="card"><div class="reason">Enter your API key and a ticker symbol first.</div></div>';
+        return;
+      }
+      document.getElementById('status').textContent = `Checking ${ticker}...`;
+      try {
+        const result = await fetchChunk([ticker], apiKey, true);
+        const item = result.rows[0];
+        if (!item) {
+          resultEl.innerHTML = `<div class="card"><div class="reason">No data returned for ${ticker}.</div></div>`;
+          return;
+        }
+        resultEl.appendChild(renderCard(item, false, null, true));
+        document.getElementById('status').textContent = `${ticker} checked.`;
+      } catch (err) {
+        resultEl.innerHTML = `<div class="card"><div class="reason">Could not check ${ticker}: ${err.message}</div></div>`;
+        document.getElementById('status').textContent = `Could not check ${ticker}.`;
+      }
     }
 
     document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
     document.getElementById('showBtn').addEventListener('click', () => runScan(false));
-
-    window.clearCache = function() {
-      clearCache();
+    document.getElementById('morningBtn').addEventListener('click', renderSavedPicksOnly);
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      clearCacheOnly();
       updateMetaInfo('--', 'cache cleared', null);
       runScan(true);
-    };
+    });
+    document.getElementById('checkTickerBtn').addEventListener('click', checkSingleTicker);
 
     loadApiKey();
+    renderSavedPicksOnly();
   </script>
 </body>
 </html>
