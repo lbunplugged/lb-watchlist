@@ -6,197 +6,496 @@
   <title>LB's Watch List</title>
   <style>
     :root {
-      --bg: #000000;
-      --panel: #0c0c0c;
-      --border: #222;
-      --text: #f5f5f5;
-      --muted: #9b9b9b;
-      --good: #37d67a;
-      --bad: #ff5c5c;
-      --warn: #f5b942;
-      --blue: #3b82f6;
+      --bg: #050505;
+      --panel: #0d0d0f;
+      --panel-2: #121215;
+      --border: rgba(212,175,55,0.18);
+      --border-soft: rgba(255,255,255,0.06);
+      --text: #f7f4ea;
+      --muted: #9f9886;
+      --gold: #d4af37;
+      --gold-soft: rgba(212,175,55,0.14);
+      --green: #38d27a;
+      --yellow: #f0c84b;
+      --red: #ff5f6d;
+      --blue: #7ea8ff;
+      --shadow: 0 12px 40px rgba(0,0,0,0.45);
+      --radius: 20px;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      background: var(--bg);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(212,175,55,0.06), transparent 28%),
+        linear-gradient(180deg, #090909 0%, #040404 100%);
       color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Inter, Arial, Helvetica, sans-serif;
     }
+
     .wrap {
-      max-width: 1100px;
+      max-width: 760px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 28px 18px 48px;
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 44px;
-      letter-spacing: 0.04em;
-    }
-    p {
-      color: var(--muted);
-      margin: 0 0 18px;
-    }
-    .toolbar {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin: 20px 0 16px;
-    }
-    button {
-      background: #111;
-      color: white;
-      border: 1px solid #333;
-      padding: 14px 22px;
-      cursor: pointer;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 700;
-    }
-    button:hover { background: #171717; }
-    input[type="password"], input[type="text"] {
-      background: #111;
-      color: #fff;
-      border: 1px solid #333;
-      padding: 14px 14px;
-      border-radius: 10px;
-      min-width: 240px;
-      flex: 1;
-    }
-    .status {
-      color: var(--muted);
-      margin-bottom: 12px;
-      min-height: 20px;
-    }
-    .meta {
-      color: var(--muted);
-      margin-bottom: 18px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .section-title {
-      margin: 28px 0 12px;
-      font-size: 20px;
-      color: #fff;
-      letter-spacing: 0.03em;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-    @media (min-width: 900px) {
-      .grid { grid-template-columns: 1fr 1fr; }
-    }
-    .card {
-      background: var(--panel);
+
+    .hero {
+      background: linear-gradient(180deg, rgba(212,175,55,0.09), rgba(255,255,255,0.02));
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 14px;
+      border-radius: 28px;
+      padding: 24px 18px 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
     }
-    .clickable-card { cursor: pointer; }
-    .clickable-card:hover { border-color: #3a3a3a; background: #101010; }
-    .row {
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -35%;
+      right: -10%;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(212,175,55,0.14), transparent 68%);
+      pointer-events: none;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 44px;
+      line-height: 0.96;
+      letter-spacing: 0.02em;
+      color: #fff8e7;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: #b9ad88;
+      font-size: 15px;
+      line-height: 1.45;
+      max-width: 560px;
+    }
+
+    .meta-bar {
+      margin-top: 14px;
       display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
+      gap: 8px;
       flex-wrap: wrap;
     }
-    .ticker {
-      font-size: 22px;
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      background: rgba(255,255,255,0.03);
+      color: #d1c39b;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .control-card,
+    .section-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid var(--border-soft);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .control-label {
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.025);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.07);
+      padding: 16px 16px;
+      border-radius: 16px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      border-color: rgba(212,175,55,0.45);
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.10);
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      width: 100%;
+      background: linear-gradient(180deg, #141416, #0d0d10);
+      color: #fff9eb;
+      border: 1px solid rgba(212,175,55,0.22);
+      padding: 15px 14px;
+      cursor: pointer;
+      border-radius: 16px;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: 0.04em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
-    .tag {
-      border: 1px solid #333;
-      color: #ddd;
-      padding: 5px 10px;
+
+    button:hover {
+      background: linear-gradient(180deg, #18181c, #111116);
+    }
+
+    .button-primary {
+      background: linear-gradient(180deg, rgba(212,175,55,0.24), rgba(212,175,55,0.08));
+      border-color: rgba(212,175,55,0.45);
+      color: #fff8df;
+    }
+
+    .button-primary:hover {
+      background: linear-gradient(180deg, rgba(212,175,55,0.30), rgba(212,175,55,0.10));
+    }
+
+    .status-box {
+      margin-top: 12px;
+      padding: 14px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .status {
+      color: #e6dcc0;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 20px;
+    }
+
+    .meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      margin: 2px 0 14px;
+      font-size: 13px;
+      color: var(--gold);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stock-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 14px;
+      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    }
+
+    .stock-card.clickable {
+      cursor: pointer;
+    }
+
+    .stock-card.clickable:hover {
+      border-color: rgba(212,175,55,0.24);
+      transform: translateY(-1px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    }
+
+    .stock-card.top-highlight {
+      border-color: rgba(212,175,55,0.44);
+      background: linear-gradient(180deg, rgba(212,175,55,0.12), rgba(255,255,255,0.02));
+      box-shadow: 0 0 0 1px rgba(212,175,55,0.08), 0 16px 36px rgba(0,0,0,0.42);
+    }
+
+    .stock-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stock-left {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rank-badge {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(212,175,55,0.12);
+      border: 1px solid rgba(212,175,55,0.28);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .fire-badge {
+      color: #ffd36c;
+      font-size: 18px;
+    }
+
+    .ticker-wrap {
+      min-width: 0;
+    }
+
+    .ticker {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      color: #fff9ec;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .subline {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stock-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .verdict {
+      padding: 8px 10px;
       border-radius: 999px;
       font-size: 12px;
-      display: inline-block;
-      margin-right: 8px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .verdict-strong {
+      color: #dfffe9;
+      background: rgba(56,210,122,0.13);
+      border-color: rgba(56,210,122,0.28);
+    }
+
+    .verdict-watch {
+      color: #fff8da;
+      background: rgba(240,200,75,0.12);
+      border-color: rgba(240,200,75,0.28);
+    }
+
+    .verdict-avoid {
+      color: #ffe4e7;
+      background: rgba(255,95,109,0.12);
+      border-color: rgba(255,95,109,0.26);
+    }
+
+    .confidence {
+      min-width: 54px;
+      text-align: center;
+      padding: 8px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #f8f1da;
+      border: 1px solid rgba(212,175,55,0.22);
+      background: rgba(212,175,55,0.08);
+    }
+
+    .quick-line {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #ded7c2;
+    }
+
+    .tap-line {
       margin-top: 8px;
+      font-size: 11px;
+      color: #7f9fff;
+      letter-spacing: 0.02em;
     }
-    .good { color: var(--good); }
-    .bad { color: var(--bad); }
-    .warn { color: var(--warn); }
-    .blue { color: var(--blue); }
-    .reason {
-      margin-top: 12px;
-      line-height: 1.5;
-      color: #e9e9e9;
-    }
-    .small { font-size: 13px; color: var(--muted); }
+
     .detail-panel {
+      display: none;
       margin-top: 14px;
       padding-top: 12px;
-      border-top: 1px solid #222;
+      border-top: 1px solid rgba(255,255,255,0.06);
     }
-    .indicator-list {
+
+    .detail-title {
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .detail-text {
+      font-size: 14px;
+      line-height: 1.58;
+      color: #ece5d2;
+    }
+
+    .detail-grid {
       display: grid;
-      grid-template-columns: 1fr;
       gap: 8px;
       margin-top: 12px;
     }
+
     .indicator-row {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 14px;
+      color: #e7e1cf;
     }
-    .check { color: var(--good); font-weight: 700; }
-    .xmark { color: var(--bad); font-weight: 700; }
+
+    .check {
+      color: var(--green);
+      font-weight: 900;
+      font-size: 17px;
+      width: 18px;
+      text-align: center;
+    }
+
+    .xmark {
+      color: var(--red);
+      font-weight: 900;
+      font-size: 17px;
+      width: 18px;
+      text-align: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .stat-chip {
+      padding: 10px 10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.05);
+      font-size: 12px;
+      color: #d5ccb2;
+    }
+
+    .note-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      color: #d4cab0;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
     .footer {
-      margin-top: 28px;
+      margin-top: 18px;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: 12px;
+      line-height: 1.65;
+      padding: 4px 2px 0;
     }
-    code {
-      color: #ddd;
-      background: #111;
-      padding: 2px 6px;
-      border-radius: 6px;
-    }
+
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>LB's Watch List</h1>
-    <p>Night scan, saved picks, single ticker check, and click-to-open details with indicator checkmarks.</p>
-
-    <div class="toolbar">
-      <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
-      <button id="saveKeyBtn">SAVE KEY</button>
-      <button id="showBtn">NIGHT SCAN</button>
-      <button id="morningBtn">CHECK MY PICKS</button>
-      <button id="refreshBtn">FORCE REFRESH</button>
+    <div class="hero">
+      <h1>LB's Watch<br>List</h1>
+      <div class="subtitle">Luxury-grade mobile scanner for your short call option strategy. Clean at a glance. Deep when you tap in.</div>
+      <div class="meta-bar">
+        <div class="pill">🟢 Strong Setup</div>
+        <div class="pill">🟡 Watch</div>
+        <div class="pill">🔴 Avoid</div>
+      </div>
     </div>
 
-    <div class="toolbar" style="margin-top:0;">
-      <input id="singleTickerInput" type="text" placeholder="Enter ticker symbol" />
-      <button id="checkTickerBtn">CHECK TICKER</button>
+    <div class="control-card">
+      <div class="control-label">Access</div>
+      <div class="stack">
+        <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
+        <div class="button-grid">
+          <button id="saveKeyBtn">Save Key</button>
+          <button id="showBtn" class="button-primary">Night Scan</button>
+          <button id="morningBtn">Check My Picks</button>
+          <button id="refreshBtn">Force Refresh</button>
+        </div>
+      </div>
+      <div class="status-box">
+        <div class="status" id="status">Ready. Save your API key, then scan.</div>
+        <div class="meta" id="metaInfo">Last updated: -- · Data source: -- · Market trend: --</div>
+      </div>
     </div>
 
-    <div class="status" id="status">Ready. Save your API key, then scan.</div>
-    <div class="meta" id="metaInfo">Last updated: -- · Data source: -- · Market trend: --</div>
+    <div class="control-card">
+      <div class="control-label">Single Ticker Check</div>
+      <div class="stack">
+        <input id="singleTickerInput" type="text" placeholder="Enter ticker symbol" />
+        <button id="checkTickerBtn">Check Ticker</button>
+      </div>
+    </div>
 
-    <div class="section-title">Top 5 Ranked Setups</div>
-    <div id="topFive" class="grid"></div>
+    <div class="section-card">
+      <div class="section-title">Top 5 Ranked Setups</div>
+      <div id="topFive" class="list"></div>
+    </div>
 
-    <div class="section-title">Bonus Risky Setup</div>
-    <div id="riskyOne"></div>
+    <div class="section-card">
+      <div class="section-title">Bonus Risky Setup</div>
+      <div id="riskyOne" class="list"></div>
+    </div>
 
-    <div class="section-title">Saved Picks Morning Check</div>
-    <div id="savedPicks" class="grid"></div>
+    <div class="section-card">
+      <div class="section-title">Saved Picks Morning Check</div>
+      <div id="savedPicks" class="list"></div>
+    </div>
 
-    <div class="section-title">Single Ticker Check</div>
-    <div id="singleTickerResult"></div>
+    <div class="section-card">
+      <div class="section-title">Single Ticker Result</div>
+      <div id="singleTickerResult"></div>
+    </div>
 
     <div class="footer">
-      This version is built for a cleaner workflow. <strong>Night Scan</strong> ranks the list and saves your picks. <strong>Check My Picks</strong> brings those saved names back in the morning so you are not replacing them with a fresh list. Tap any card to see why it qualified and which indicators passed.
+      Night Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, and quick trade idea.
     </div>
   </div>
 
@@ -210,7 +509,7 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-cache-v3';
+    const CACHE_PREFIX = 'lb-watchlist-premium-v1';
     const BATCH_SIZE = 5;
     const BATCH_DELAY_MS = 75000;
     const OUTPUTSIZE = 80;
@@ -310,7 +609,7 @@
     }
 
     function streakLabel(closes) {
-      if (closes.length < 2) return 'no streak';
+      if (closes.length < 2) return 'No streak';
       const direction = closes.at(-1) >= closes.at(-2) ? 'positive' : 'negative';
       let count = 1;
       for (let i = closes.length - 1; i > 0; i--) {
@@ -327,6 +626,52 @@
         open: Number(v.open), high: Number(v.high), low: Number(v.low), close: Number(v.close),
         volume: Number(v.volume || 0), datetime: v.datetime
       }));
+    }
+
+    function getVerdictFromScore(score) {
+      if (score >= 80) return 'strong';
+      if (score >= 35) return 'watch';
+      return 'avoid';
+    }
+
+    function getVerdictLabel(verdict) {
+      if (verdict === 'strong') return '🟢 Strong Setup';
+      if (verdict === 'watch') return '🟡 Watch';
+      return '🔴 Avoid';
+    }
+
+    function getConfidence(score) {
+      return Math.max(5, Math.min(99, Math.round(score)));
+    }
+
+    function getQuickTradeIdea(item, isRisky = false) {
+      const { checks, stats } = item;
+      if (isRisky && checks.belowZeroBullish) {
+        return 'Early reversal setup. Let price prove itself before taking a call.';
+      }
+      if (checks.priceAbove20 && checks.emaBullish && checks.macdBullish && checks.volumeBullish) {
+        return 'Watch for a controlled pullback at the open, then strength back above intraday support.';
+      }
+      if (checks.macdBullish || checks.rsiBullish) {
+        return 'Needs more confirmation. Keep it on watch, but do not force an entry.';
+      }
+      return 'Stay away for now. This does not match your setup.';
+    }
+
+    function buildDescription(item, rank, isRisky = false) {
+      const verdict = item.verdict;
+      const streak = item.streak.toLowerCase();
+      const ticker = item.ticker;
+      if (isRisky) {
+        return `${ticker} is the risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier, less confirmed, and more aggressive than the main ranked names. Treat it like a watch-only setup unless price action strengthens.`;
+      }
+      if (verdict === 'strong') {
+        return `${ticker} earned rank #${rank} because it matched the strongest blend of trend, momentum, and participation on your list. The chart is holding up well enough to keep it in your premium watch zone, and the current streak of ${streak} adds context to the move.`;
+      }
+      if (verdict === 'watch') {
+        return `${ticker} is not a full green light yet. It has enough pieces working to stay on your radar, but not enough alignment to treat it like a top conviction setup. This is a patience name, not a force-the-trade name.`;
+      }
+      return `${ticker} is not a good pick for your current strategy right now. Too many parts of your setup are missing, so this belongs in the avoid category unless the chart improves later.`;
     }
 
     function scoreTickerFromBars(ticker, bars) {
@@ -375,14 +720,20 @@
       if (vol20[i] !== null && volumes[i] > vol20[i]) riskyReasons.push('volume support present');
       if (closes[i] > closes[prev]) riskyReasons.push('latest day closed green');
 
+      const verdict = getVerdictFromScore(score);
+      const confidence = getConfidence(score);
+
       return {
         ticker,
         closes,
         score,
         riskyScore,
+        verdict,
+        confidence,
         reasons,
         riskyReasons,
         streak: streakLabel(closes),
+        quickIdea: getQuickTradeIdea({ checks: { priceAbove20, emaBullish, macdBullish, rsiBullish, volumeBullish, belowZeroBullish }, stats: { rsi: rsi14[i] } }, false),
         lastDate: bars[i].datetime,
         stats: {
           close: closes[i].toFixed(2),
@@ -457,7 +808,7 @@
       let label = 'neutral';
       if (closes[i] > ema20[i] && ema5[i] > ema20[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) label = 'bullish';
       else if (closes[i] < ema20[i] && ema5[i] < ema20[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) label = 'bearish';
-      const result = { label, detail: `SPY close ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'} · MACD ${macdLine[i].toFixed(3)} vs ${signalLine[i].toFixed(3)}` };
+      const result = { label, detail: `SPY ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'}` };
       localStorage.setItem(cacheKey, JSON.stringify(result));
       return result;
     }
@@ -465,14 +816,6 @@
     function updateMetaInfo(updatedAt, dataSource, marketTrend) {
       const trendText = marketTrend ? `${marketTrend.label}${marketTrend.detail ? ` (${marketTrend.detail})` : ''}` : '--';
       document.getElementById('metaInfo').textContent = `Last updated: ${updatedAt || '--'} · Data source: ${dataSource || '--'} · Market trend: ${trendText}`;
-    }
-
-    function winnerParagraph(item, rank, isRisky = false) {
-      const reasons = isRisky ? item.riskyReasons : item.reasons;
-      const opening = isRisky
-        ? `${item.ticker} is the bonus risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier and less confirmed than the main top picks, but it can run harder if buyers keep stepping in.`
-        : `${item.ticker} ranked ${rank ? '#' + rank : 'high'} because it matched more of your setup than most names on the watchlist. Trend, momentum, and participation lined up better here than in weaker names.`;
-      return `${opening} Main reasons: ${reasons.join(', ') || 'none listed'}. The streak is ${item.streak}, so you can quickly see whether price has been stacking green days or fading lower. This is a watchlist rank, not an automatic buy signal.`;
     }
 
     function renderIndicators(item, isRisky = false) {
@@ -487,36 +830,64 @@
       return checks.map(([label, pass]) => `<div class="indicator-row"><span class="${pass ? 'check' : 'xmark'}">${pass ? '✓' : '✕'}</span><span>${label}</span></div>`).join('');
     }
 
-    function renderCard(item, isRisky = false, rank = null, expanded = false) {
-      const div = document.createElement('div');
-      div.className = 'card clickable-card';
-      const streakClass = item.streak.includes('positive') ? 'good' : 'bad';
-      const reasonText = (isRisky ? item.riskyReasons : item.reasons).join(', ') || 'No strong reason found';
-      const title = isRisky ? item.ticker : `${rank ? '#' + rank + ' ' : ''}${item.ticker}`;
-      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank || 'single'}`;
-      div.innerHTML = `
-        <div class="row">
-          <div>
-            <div class="ticker">${title}</div>
-            <div class="small">Date ${item.lastDate} · Close ${item.stats.close} · 5 EMA ${item.stats.ema5} · 20 EMA ${item.stats.ema20}</div>
-          </div>
-          <div>
-            <span class="tag ${streakClass}">${item.streak}</span>
-            ${isRisky ? '<span class="tag warn">risky below-zero setup</span>' : '<span class="tag blue">tap for details</span>'}
-          </div>
-        </div>
-        <div class="reason"><strong>Why:</strong> ${reasonText}</div>
-        <div class="small" style="margin-top:10px;">MACD ${item.stats.macd} vs Signal ${item.stats.signal} · RSI ${item.stats.rsi} · Vol ${Number(item.stats.volume).toLocaleString()} ${item.stats.volAvg ? `vs avg ${Number(item.stats.volAvg).toLocaleString()}` : ''}</div>
-        <div id="${summaryId}" class="detail-panel reason" style="display:${expanded ? 'block' : 'none'};">
-          <div><strong>${isRisky ? 'Why this risky setup' : 'Why this is a good pick'}:</strong> ${winnerParagraph(item, rank, isRisky)}</div>
-          <div class="indicator-list">${renderIndicators(item, isRisky)}</div>
+    function renderStats(item) {
+      return `
+        <div class="stats-grid">
+          <div class="stat-chip">Close: ${item.stats.close}</div>
+          <div class="stat-chip">RSI: ${item.stats.rsi}</div>
+          <div class="stat-chip">5 EMA: ${item.stats.ema5}</div>
+          <div class="stat-chip">20 EMA: ${item.stats.ema20}</div>
+          <div class="stat-chip">MACD: ${item.stats.macd}</div>
+          <div class="stat-chip">Signal: ${item.stats.signal}</div>
         </div>
       `;
-      div.addEventListener('click', () => {
-        const detail = div.querySelector(`#${summaryId}`);
-        detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function renderCard(item, options = {}) {
+      const { isRisky = false, rank = null, expanded = false, topHighlight = false } = options;
+      const card = document.createElement('div');
+      card.className = `stock-card clickable ${topHighlight ? 'top-highlight' : ''}`;
+      const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank || 'single'}-${Math.random().toString(36).slice(2,7)}`;
+      const verdict = isRisky ? 'watch' : item.verdict;
+      const verdictLabel = isRisky ? '🟡 Watch' : getVerdictLabel(verdict);
+      const verdictClass = verdict === 'strong' ? 'verdict-strong' : verdict === 'watch' ? 'verdict-watch' : 'verdict-avoid';
+      const quickIdea = isRisky ? getQuickTradeIdea(item, true) : getQuickTradeIdea(item, false);
+      const description = buildDescription(item, rank, isRisky);
+      const headline = isRisky ? item.ticker : item.ticker;
+      const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
+      const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
+
+      card.innerHTML = `
+        <div class="stock-top">
+          <div class="stock-left">
+            ${badge}
+            <div class="ticker-wrap">
+              <div class="ticker">${headline}</div>
+              <div class="subline">${item.lastDate} · ${item.streak}</div>
+            </div>
+          </div>
+          <div class="stock-right">
+            <div class="verdict ${verdictClass}">${verdictLabel}</div>
+            <div class="confidence">${confidence}%</div>
+          </div>
+        </div>
+        <div class="quick-line">${topHighlight ? '🔥 Best setup today. ' : ''}${quickIdea}</div>
+        <div class="tap-line">Tap for full details</div>
+        <div id="${summaryId}" class="detail-panel" style="display:${expanded ? 'block' : 'none'};">
+          <div class="detail-title">Full Breakdown</div>
+          <div class="detail-text">${description}</div>
+          <div class="detail-grid">${renderIndicators(item, isRisky)}</div>
+          ${renderStats(item)}
+          <div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${quickIdea}</div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        const panel = card.querySelector(`#${summaryId}`);
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
       });
-      return div;
+
+      return card;
     }
 
     function loadSavedBundle() {
@@ -530,11 +901,11 @@
       savedEl.innerHTML = '';
       const saved = loadSavedBundle();
       if (!saved) {
-        savedEl.innerHTML = '<div class="card"><div class="reason">No saved picks yet. Run Night Scan first, then come back in the morning and use Check My Picks.</div></div>';
+        savedEl.innerHTML = '<div class="note-card">No saved picks yet. Run Night Scan first, then come back in the morning and use Check My Picks.</div>';
         return;
       }
-      saved.ranked.forEach((item, idx) => savedEl.appendChild(renderCard(item, false, idx + 1, true)));
-      if (saved.risky) savedEl.appendChild(renderCard(saved.risky, true, null, true));
+      saved.ranked.forEach((item, idx) => savedEl.appendChild(renderCard(item, { rank: idx + 1 })));
+      if (saved.risky) savedEl.appendChild(renderCard(saved.risky, { isRisky: true }));
     }
 
     async function runScan(forceRefresh = false) {
@@ -583,10 +954,12 @@
 
       const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
       const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
+      if (risky) risky.quickIdea = getQuickTradeIdea(risky, true);
+
       localStorage.setItem('lb_saved_picks', JSON.stringify({ ranked, risky, savedAt: new Date().toISOString() }));
 
-      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, false, idx + 1)));
-      if (risky) riskyOne.appendChild(renderCard(risky, true));
+      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, { rank: idx + 1, topHighlight: idx === 0 })));
+      if (risky) riskyOne.appendChild(renderCard(risky, { isRisky: true }));
 
       let dataSource = 'cached';
       if (sourcesSeen.has('fresh') && sourcesSeen.size === 1) dataSource = 'fresh';
@@ -604,7 +977,7 @@
       const resultEl = document.getElementById('singleTickerResult');
       resultEl.innerHTML = '';
       if (!apiKey || !ticker) {
-        resultEl.innerHTML = '<div class="card"><div class="reason">Enter your API key and a ticker symbol first.</div></div>';
+        resultEl.innerHTML = '<div class="note-card">Enter your API key and a ticker symbol first.</div>';
         return;
       }
       document.getElementById('status').textContent = `Checking ${ticker}...`;
@@ -612,13 +985,13 @@
         const result = await fetchChunk([ticker], apiKey, true);
         const item = result.rows[0];
         if (!item) {
-          resultEl.innerHTML = `<div class="card"><div class="reason">No data returned for ${ticker}.</div></div>`;
+          resultEl.innerHTML = `<div class="note-card">No data returned for ${ticker}.</div>`;
           return;
         }
-        resultEl.appendChild(renderCard(item, false, null, true));
+        resultEl.appendChild(renderCard(item, { expanded: true }));
         document.getElementById('status').textContent = `${ticker} checked.`;
       } catch (err) {
-        resultEl.innerHTML = `<div class="card"><div class="reason">Could not check ${ticker}: ${err.message}</div></div>`;
+        resultEl.innerHTML = `<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;
         document.getElementById('status').textContent = `Could not check ${ticker}.`;
       }
     }
