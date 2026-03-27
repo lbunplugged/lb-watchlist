@@ -14,13 +14,11 @@
       --text: #f7f4ea;
       --muted: #9f9886;
       --gold: #d4af37;
-      --gold-soft: rgba(212,175,55,0.14);
       --green: #38d27a;
       --yellow: #f0c84b;
       --red: #ff5f6d;
       --blue: #7ea8ff;
       --shadow: 0 12px 40px rgba(0,0,0,0.45);
-      --radius: 20px;
     }
 
     * { box-sizing: border-box; }
@@ -161,9 +159,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
 
-    button:hover {
-      background: linear-gradient(180deg, #18181c, #111116);
-    }
+    button:hover { background: linear-gradient(180deg, #18181c, #111116); }
 
     .button-primary {
       background: linear-gradient(180deg, rgba(212,175,55,0.24), rgba(212,175,55,0.08));
@@ -219,9 +215,7 @@
       transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
     }
 
-    .stock-card.clickable {
-      cursor: pointer;
-    }
+    .stock-card.clickable { cursor: pointer; }
 
     .stock-card.clickable:hover {
       border-color: rgba(212,175,55,0.24);
@@ -268,9 +262,7 @@
       font-size: 18px;
     }
 
-    .ticker-wrap {
-      min-width: 0;
-    }
+    .ticker-wrap { min-width: 0; }
 
     .ticker {
       font-size: 24px;
@@ -426,6 +418,21 @@
       line-height: 1.55;
     }
 
+    .ai-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(126,168,255,0.22);
+      background: rgba(126,168,255,0.08);
+      color: #bfd0ff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
     .footer {
       margin-top: 18px;
       color: var(--muted);
@@ -433,8 +440,6 @@
       line-height: 1.65;
       padding: 4px 2px 0;
     }
-
-    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -500,6 +505,8 @@
   </div>
 
   <script>
+    const AI_BACKEND_URL = "https://shrill-cherry-6968.leonardbrown40.workers.dev";
+
     const WATCHLIST = [
       'AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','AMD','NFLX',
       'ORCL','CRM','ADBE','NOW','QCOM','AMAT','MU','ARM','SHOP','PANW',
@@ -523,7 +530,7 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-premium-v1';
+    const CACHE_PREFIX = 'lb-watchlist-premium-ai-v1';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
@@ -659,7 +666,7 @@
     }
 
     function getQuickTradeIdea(item, isRisky = false) {
-      const { checks, stats } = item;
+      const { checks } = item;
       if (isRisky && checks.belowZeroBullish) {
         return 'Early reversal setup. Let price prove itself before taking a call.';
       }
@@ -672,20 +679,19 @@
       return 'Stay away for now. This does not match your setup.';
     }
 
-    function buildDescription(item, rank, isRisky = false) {
-      const verdict = item.verdict;
-      const streak = item.streak.toLowerCase();
+    function buildFallbackDescription(item, rank, isRisky = false) {
       const ticker = item.ticker;
+      const verdict = item.verdict;
       if (isRisky) {
-        return `${ticker} is the risky pick because momentum is trying to turn before the MACD gets back above zero. That makes it earlier, less confirmed, and more aggressive than the main ranked names. Treat it like a watch-only setup unless price action strengthens.`;
+        return `${ticker} is the risky pick because momentum is trying to turn before the MACD gets back above zero. It is earlier, less confirmed, and should be treated with patience.`;
       }
       if (verdict === 'strong') {
-        return `${ticker} earned rank #${rank} because it matched the strongest blend of trend, momentum, and participation on your list. The chart is holding up well enough to keep it in your premium watch zone, and the current streak of ${streak} adds context to the move.`;
+        return `${ticker} earned rank #${rank} because it matched the strongest blend of trend, momentum, and participation on your list.`;
       }
       if (verdict === 'watch') {
-        return `${ticker} is not a full green light yet. It has enough pieces working to stay on your radar, but not enough alignment to treat it like a top conviction setup. This is a patience name, not a force-the-trade name.`;
+        return `${ticker} has enough going for it to stay on your radar, but not enough alignment to call it a top conviction setup yet.`;
       }
-      return `${ticker} is not a good pick for your current strategy right now. Too many parts of your setup are missing, so this belongs in the avoid category unless the chart improves later.`;
+      return `${ticker} is not a good pick for your current strategy right now. Stay away from this one until the chart improves.`;
     }
 
     function scoreTickerFromBars(ticker, bars) {
@@ -747,7 +753,10 @@
         reasons,
         riskyReasons,
         streak: streakLabel(closes),
-        quickIdea: getQuickTradeIdea({ checks: { priceAbove20, emaBullish, macdBullish, rsiBullish, volumeBullish, belowZeroBullish }, stats: { rsi: rsi14[i] } }, false),
+        quickIdea: '',
+        aiSummary: '',
+        aiExplanation: '',
+        aiTradeIdea: '',
         lastDate: bars[i].datetime,
         stats: {
           close: closes[i].toFixed(2),
@@ -832,6 +841,47 @@
       document.getElementById('metaInfo').textContent = `Last updated: ${updatedAt || '--'} · Data source: ${dataSource || '--'} · Market trend: ${trendText}`;
     }
 
+    async function getAIAnalysis(item, rank = null, isRisky = false) {
+      try {
+        const marketTrendText = document.getElementById('metaInfo').textContent;
+        const res = await fetch(`${AI_BACKEND_URL}/analyze-stock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ticker: item.ticker,
+            rank,
+            verdict: isRisky ? 'watch' : item.verdict,
+            confidence: isRisky ? getConfidence(item.riskyScore) : item.confidence,
+            streak: item.streak,
+            marketTrend: marketTrendText,
+            isRisky,
+            checks: item.checks,
+            stats: item.stats
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`AI backend failed: ${res.status}`);
+        }
+
+        return await res.json();
+      } catch (error) {
+        return {
+          verdict_title: getVerdictLabel(isRisky ? 'watch' : item.verdict),
+          summary_line: isRisky
+            ? 'Early setup. Interesting, but not fully confirmed yet.'
+            : (item.verdict === 'avoid'
+              ? 'Stay away from this one right now.'
+              : item.verdict === 'watch'
+                ? 'Keep this on watch, but it still needs more confirmation.'
+                : 'One of the cleaner names on the board right now.'),
+          full_explanation: buildFallbackDescription(item, rank, isRisky),
+          trade_idea: getQuickTradeIdea(item, isRisky),
+          what_changed: ''
+        };
+      }
+    }
+
     function renderIndicators(item, isRisky = false) {
       const checks = [
         ['Price above 20 EMA', item.checks.priceAbove20],
@@ -863,11 +913,19 @@
       card.className = `stock-card clickable ${topHighlight ? 'top-highlight' : ''}`;
       const summaryId = `summary-${item.ticker}-${isRisky ? 'risky' : rank || 'single'}-${Math.random().toString(36).slice(2,7)}`;
       const verdict = isRisky ? 'watch' : item.verdict;
-      const verdictLabel = isRisky ? '🟡 Watch' : getVerdictLabel(verdict);
+      const verdictLabel = getVerdictLabel(verdict);
       const verdictClass = verdict === 'strong' ? 'verdict-strong' : verdict === 'watch' ? 'verdict-watch' : 'verdict-avoid';
-      const quickIdea = isRisky ? getQuickTradeIdea(item, true) : getQuickTradeIdea(item, false);
-      const description = buildDescription(item, rank, isRisky);
-      const headline = isRisky ? item.ticker : item.ticker;
+      const quickIdea = item.aiTradeIdea || getQuickTradeIdea(item, isRisky);
+      const description = item.aiExplanation || buildFallbackDescription(item, rank, isRisky);
+      const summaryLine = item.aiSummary || (
+        isRisky
+          ? 'Early setup. Interesting, but not fully confirmed yet.'
+          : (item.verdict === 'avoid'
+            ? 'Stay away from this one right now.'
+            : item.verdict === 'watch'
+              ? 'Keep this on watch, but it still needs more confirmation.'
+              : 'One of the cleaner names on the board right now.')
+      );
       const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
       const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
 
@@ -876,7 +934,7 @@
           <div class="stock-left">
             ${badge}
             <div class="ticker-wrap">
-              <div class="ticker">${headline}</div>
+              <div class="ticker">${item.ticker}</div>
               <div class="subline">${item.lastDate} · ${item.streak}</div>
             </div>
           </div>
@@ -885,20 +943,41 @@
             <div class="confidence">${confidence}%</div>
           </div>
         </div>
-        <div class="quick-line">${topHighlight ? '🔥 Best setup today. ' : ''}${quickIdea}</div>
+        <div class="quick-line">${topHighlight ? '🔥 Best setup today. ' : ''}${summaryLine}</div>
         <div class="tap-line">Tap for full details</div>
         <div id="${summaryId}" class="detail-panel" style="display:${expanded ? 'block' : 'none'};">
           <div class="detail-title">Full Breakdown</div>
           <div class="detail-text">${description}</div>
+          <div class="ai-chip">AI-enhanced explanation</div>
           <div class="detail-grid">${renderIndicators(item, isRisky)}</div>
           ${renderStats(item)}
           <div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${quickIdea}</div>
         </div>
       `;
 
-      card.addEventListener('click', () => {
+      card.addEventListener('click', async () => {
         const panel = card.querySelector(`#${summaryId}`);
-        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        const alreadyLoaded = panel.dataset.aiLoaded === 'true';
+
+        if (!alreadyLoaded) {
+          panel.style.display = 'block';
+          const detailText = panel.querySelector('.detail-text');
+          detailText.textContent = 'Loading AI explanation...';
+
+          const ai = await getAIAnalysis(item, rank, isRisky);
+          item.aiSummary = ai.summary_line || item.aiSummary;
+          item.aiExplanation = ai.full_explanation || item.aiExplanation;
+          item.aiTradeIdea = ai.trade_idea || item.aiTradeIdea;
+
+          const quickLine = card.querySelector('.quick-line');
+          quickLine.textContent = `${topHighlight ? '🔥 Best setup today. ' : ''}${item.aiSummary}`;
+
+          detailText.textContent = item.aiExplanation;
+          panel.querySelector('.detail-text:last-child').innerHTML = `<strong>Quick trade idea:</strong> ${item.aiTradeIdea}`;
+          panel.dataset.aiLoaded = 'true';
+        } else {
+          panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
       });
 
       return card;
@@ -958,7 +1037,7 @@
           return;
         }
         if (i < chunks.length - 1) {
-          status.textContent = `Batch ${i + 1} complete. Waiting about 75 seconds to stay inside the API limit...`;
+          status.textContent = `Batch ${i + 1} complete. Waiting about 30 seconds to stay inside the API limit...`;
           await sleep(BATCH_DELAY_MS);
         }
       }
@@ -968,7 +1047,6 @@
 
       const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
       const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
-      if (risky) risky.quickIdea = getQuickTradeIdea(risky, true);
 
       localStorage.setItem('lb_saved_picks', JSON.stringify({ ranked, risky, savedAt: new Date().toISOString() }));
 
@@ -1002,6 +1080,12 @@
           resultEl.innerHTML = `<div class="note-card">No data returned for ${ticker}.</div>`;
           return;
         }
+
+        const ai = await getAIAnalysis(item, null, false);
+        item.aiSummary = ai.summary_line || '';
+        item.aiExplanation = ai.full_explanation || '';
+        item.aiTradeIdea = ai.trade_idea || '';
+
         resultEl.appendChild(renderCard(item, { expanded: true }));
         document.getElementById('status').textContent = `${ticker} checked.`;
       } catch (err) {
