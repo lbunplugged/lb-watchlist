@@ -501,17 +501,31 @@
 
   <script>
     const WATCHLIST = [
-      'AAPL','AMD','AMZN','BA','BABA','COIN','COST','CRM','CSCO','CVX',
-      'DIS','DVN','GOOGL','GS','HD','INTC','IWM','JPM','LLY','MARA',
-      'META','MRVL','MSFT','MU','NFLX','NKE','NOK','NVDA','ORCL','PANW',
-      'PLTR','PYPL','QQQ','RBLX','ROKU','SHOP','SMCI','SOFI','SPY','SQ',
-      'TSLA','UBER','UNH','V','WFC','XLE','XOM','ZM','AVGO','ARM'
+      'AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','AMD','NFLX',
+      'ORCL','CRM','ADBE','NOW','QCOM','AMAT','MU','ARM','SHOP','PANW',
+      'MRVL','SMCI','INTC','TSM','ASML','LRCX','KLAC','MCHP','NXPI','ANET',
+      'SNPS','CDNS','CRWD','DDOG','MDB','NET','SNOW','PLTR','CFLT','ESTC',
+      'COIN','MARA','RIOT','RBLX','ROKU','SOFI','UBER','LYFT','SQ','PYPL',
+      'HOOD','AFRM','UPST','APP','DUOL','CELH','CAVA','HIMS','IONQ','RKLB',
+      'JPM','GS','MS','BAC','WFC','C','SCHW','BLK','V','MA',
+      'AXP','COF','CME','ICE','SPGI','MCO','CB','PGR','AIG','BX',
+      'XOM','CVX','DVN','OXY','COP','EOG','SLB','HAL','FANG','APA',
+      'XLE','MPC','VLO','PSX','LNG','EQT','KMI','WMB','ENB','PXD',
+      'LLY','UNH','JNJ','ABBV','MRK','AMGN','TMO','ISRG','DHR','GILD',
+      'REGN','MRNA','VRTX','BSX','SYK','BMY','PFE','MDT','CI','HUM',
+      'COST','HD','LOW','NKE','DIS','SBUX','MCD','CMG','BKNG','ABNB',
+      'TGT','WMT','TJX','ROST','LULU','ULTA','DECK','ELF','ETSY','EBAY',
+      'BA','CAT','DE','GE','RTX','LMT','NOC','GD','ETN','PH',
+      'HON','UPS','FDX','UNP','NSC','CSX','DAL','UAL','AAL','JBLU',
+      'SPY','QQQ','IWM','DIA','XLK','XLF','XLV','XLI','XLY','XLC',
+      'XBI','SMH','SOXX','ARKK','KRE','TAN','IBB','TQQQ','SQQQ','FXI',
+      'BABA','PDD','JD','BIDU','NOK','SAP','NVO','RACE','MELI','SE'
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
     const CACHE_PREFIX = 'lb-watchlist-premium-v1';
-    const BATCH_SIZE = 5;
-    const BATCH_DELAY_MS = 75000;
+    const BATCH_SIZE = 25;
+    const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
 
     function getMarketDateKey() {
