@@ -387,6 +387,50 @@
       color: #d5ccb2;
     }
 
+    .entry-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .entry-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      color: var(--gold);
+    }
+
+    .entry-pill {
+      display: inline-block;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .entry-good {
+      color: #dfffe9;
+      background: rgba(56,210,122,0.13);
+      border: 1px solid rgba(56,210,122,0.28);
+    }
+
+    .entry-wait {
+      color: #fff8da;
+      background: rgba(240,200,75,0.12);
+      border: 1px solid rgba(240,200,75,0.28);
+    }
+
+    .entry-no {
+      color: #ffe4e7;
+      background: rgba(255,95,109,0.12);
+      border: 1px solid rgba(255,95,109,0.26);
+    }
+
     .note-card {
       padding: 14px;
       border-radius: 18px;
@@ -434,7 +478,7 @@
         <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
         <div class="button-grid">
           <button id="saveKeyBtn">Save Key</button>
-          <button id="showBtn">Night Scan</button>
+          <button id="showBtn">Scan</button>
           <button id="morningBtn">Check My Picks</button>
           <button id="refreshBtn">Force Refresh</button>
         </div>
@@ -474,7 +518,7 @@
     </div>
 
     <div class="footer">
-      Night Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, and quick trade idea.
+      Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, entry timing, and quick trade idea.
     </div>
   </div>
 
@@ -502,7 +546,7 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-clean-v1';
+    const CACHE_PREFIX = 'lb-watchlist-clean-v2';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
@@ -683,9 +727,11 @@
         lastDate: bars[i].datetime,
         stats: {
           close: closes[i].toFixed(2),
+          prevClose: closes[prev]?.toFixed(2) || closes[i].toFixed(2),
           ema5: ema5[i].toFixed(2),
           ema20: ema20[i].toFixed(2),
           macd: macdLine[i].toFixed(3),
+          prevMacd: macdLine[prev]?.toFixed(3) || macdLine[i].toFixed(3),
           signal: signalLine[i].toFixed(3),
           rsi: rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
           volume: volumes[i],
@@ -767,6 +813,61 @@
       if (item.verdict === 'strong' && !item.checks.volumeBullish) return 'Strong setup, but volume is light. Watch for better participation before getting aggressive.';
       if (item.verdict === 'watch') return 'Needs more confirmation. Keep it on watch, but do not force an entry.';
       return 'Stay patient and avoid forcing a trade here.';
+    }
+
+    function getEntryTiming(item, isRisky = false) {
+      const rsi = parseFloat(item.stats.rsi);
+      const priceNow = parseFloat(item.stats.close);
+      const pricePrev = parseFloat(item.stats.prevClose);
+      const macdNow = parseFloat(item.stats.macd);
+      const macdPrev = parseFloat(item.stats.prevMacd);
+      const ema5 = parseFloat(item.stats.ema5);
+      const ema20 = parseFloat(item.stats.ema20);
+      const extendedPct = ema5 > 0 ? ((priceNow - ema5) / ema5) * 100 : 0;
+
+      if (isRisky) {
+        return {
+          label: 'Wait for Better Entry',
+          className: 'entry-wait',
+          text: 'Interesting early reversal, but this is not the cleanest trigger point. Let price prove itself and avoid forcing the entry.'
+        };
+      }
+
+      if (item.verdict === 'avoid') {
+        return {
+          label: 'No Entry',
+          className: 'entry-no',
+          text: 'The setup itself is not good enough right now, so this is not a valid entry window for your strategy.'
+        };
+      }
+
+      const trendConfirmed = item.checks.priceAbove20 && item.checks.emaBullish;
+      const momentumConfirmed = item.checks.macdBullish && macdNow >= macdPrev;
+      const healthyRsi = !Number.isNaN(rsi) && rsi >= 50 && rsi <= 65;
+      const pricePushing = priceNow >= pricePrev;
+      const notTooExtended = extendedPct <= 1.5;
+
+      if (trendConfirmed && momentumConfirmed && healthyRsi && pricePushing && notTooExtended) {
+        return {
+          label: 'Good Entry Window',
+          className: 'entry-good',
+          text: 'This is a solid moment to consider entry. Trend is confirmed, momentum is active, RSI is still in a healthy zone, and price is not too stretched.'
+        };
+      }
+
+      if (trendConfirmed && momentumConfirmed) {
+        return {
+          label: 'Wait for Better Entry',
+          className: 'entry-wait',
+          text: 'Good setup, but not the best window to enter. Price looks a little extended or the push is not clean enough yet, so patience may give you a better spot.'
+        };
+      }
+
+      return {
+        label: 'No Entry',
+        className: 'entry-no',
+        text: 'The setup may be on watch, but this is not a clean entry trigger right now because momentum and price behavior are not aligned enough.'
+      };
     }
 
     async function fetchChunk(symbols, apiKey, forceRefresh = false) {
@@ -884,6 +985,7 @@
       const verdictClass = verdict === 'strong' ? 'verdict-strong' : verdict === 'watch' ? 'verdict-watch' : 'verdict-avoid';
       const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
       const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
+      const entry = getEntryTiming(item, isRisky);
 
       card.innerHTML = `
         <div class="stock-top">
@@ -906,6 +1008,11 @@
           <div class="detail-text">${buildFullExplanation(item, rank, isRisky)}</div>
           <div class="detail-grid">${renderIndicators(item, isRisky)}</div>
           ${renderStats(item)}
+          <div class="entry-box">
+            <div class="entry-title">Entry Timing</div>
+            <div class="entry-pill ${entry.className}">${entry.label}</div>
+            <div class="detail-text">${entry.text}</div>
+          </div>
           <div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${buildTradeIdea(item, isRisky)}</div>
         </div>
       `;
@@ -929,7 +1036,7 @@
       savedEl.innerHTML = '';
       const saved = loadSavedBundle();
       if (!saved) {
-        savedEl.innerHTML = '<div class="note-card">No saved picks yet. Run Night Scan first, then come back in the morning and use Check My Picks.</div>';
+        savedEl.innerHTML = '<div class="note-card">No saved picks yet. Run Scan first, then come back and use Check My Picks.</div>';
         return;
       }
 
