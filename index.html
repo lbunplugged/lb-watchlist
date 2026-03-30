@@ -518,7 +518,7 @@
     </div>
 
     <div class="footer">
-      Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, entry timing, and quick trade idea.
+      Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, entry timing, intraday trigger, and quick trade idea.
     </div>
   </div>
 
@@ -546,10 +546,12 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-clean-v2';
+    const CACHE_PREFIX = 'lb-watchlist-clean-v3';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
+    const INTRADAY_INTERVAL = '5min';
+    const INTRADAY_OUTPUTSIZE = 60;
 
     function getMarketDateKey() {
       const now = new Date();
@@ -642,6 +644,21 @@
         avgLoss = (avgLoss * (period - 1) + loss) / period;
         out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
       }
+      return out;
+    }
+
+    function calculateVWAP(bars) {
+      let cumulativePV = 0;
+      let cumulativeVolume = 0;
+      const out = [];
+
+      for (const bar of bars) {
+        const typicalPrice = (bar.high + bar.low + bar.close) / 3;
+        cumulativePV += typicalPrice * bar.volume;
+        cumulativeVolume += bar.volume;
+        out.push(cumulativeVolume ? cumulativePV / cumulativeVolume : typicalPrice);
+      }
+
       return out;
     }
 
@@ -807,7 +824,17 @@
       return parts.join(' ');
     }
 
-    function buildTradeIdea(item, isRisky = false) {
+    function buildTradeIdea(item, isRisky = false, intradaySignal = null) {
+      if (intradaySignal?.label === 'ENTER NOW') {
+        return 'Daily setup is good and intraday confirms buyers are in control right now. This is the kind of moment where a short-term call entry makes sense.';
+      }
+      if (intradaySignal?.label === 'WAIT') {
+        return 'Daily setup may still be solid, but intraday says do not force it yet. Let price confirm more cleanly before stepping into calls.';
+      }
+      if (intradaySignal?.label === 'DO NOT ENTER') {
+        return 'Daily setup may exist, but intraday is not giving you a quality call entry right now. Better to protect capital and move on.';
+      }
+
       if (isRisky) return 'Treat this like an early reversal idea. Let price prove itself before taking a call.';
       if (item.verdict === 'strong' && item.checks.volumeBullish) return 'Strong setup. Watch for continuation or a clean pullback entry.';
       if (item.verdict === 'strong' && !item.checks.volumeBullish) return 'Strong setup, but volume is light. Watch for better participation before getting aggressive.';
@@ -816,14 +843,14 @@
     }
 
     function getEntryTiming(item, isRisky = false) {
-      const rsi = parseFloat(item.stats.rsi);
+      const rsiValue = parseFloat(item.stats.rsi);
       const priceNow = parseFloat(item.stats.close);
       const pricePrev = parseFloat(item.stats.prevClose);
       const macdNow = parseFloat(item.stats.macd);
       const macdPrev = parseFloat(item.stats.prevMacd);
-      const ema5 = parseFloat(item.stats.ema5);
-      const ema20 = parseFloat(item.stats.ema20);
-      const extendedPct = ema5 > 0 ? ((priceNow - ema5) / ema5) * 100 : 0;
+      const ema5Value = parseFloat(item.stats.ema5);
+      const ema20Value = parseFloat(item.stats.ema20);
+      const extendedPct = ema5Value > 0 ? ((priceNow - ema5Value) / ema5Value) * 100 : 0;
 
       if (isRisky) {
         return {
@@ -843,11 +870,12 @@
 
       const trendConfirmed = item.checks.priceAbove20 && item.checks.emaBullish;
       const momentumConfirmed = item.checks.macdBullish && macdNow >= macdPrev;
-      const healthyRsi = !Number.isNaN(rsi) && rsi >= 50 && rsi <= 65;
+      const healthyRsi = !Number.isNaN(rsiValue) && rsiValue >= 50 && rsiValue <= 65;
       const pricePushing = priceNow >= pricePrev;
       const notTooExtended = extendedPct <= 1.5;
+      const above20 = priceNow > ema20Value;
 
-      if (trendConfirmed && momentumConfirmed && healthyRsi && pricePushing && notTooExtended) {
+      if (trendConfirmed && momentumConfirmed && healthyRsi && pricePushing && notTooExtended && above20) {
         return {
           label: 'Good Entry Window',
           className: 'entry-good',
@@ -867,6 +895,124 @@
         label: 'No Entry',
         className: 'entry-no',
         text: 'The setup may be on watch, but this is not a clean entry trigger right now because momentum and price behavior are not aligned enough.'
+      };
+    }
+
+    function getLatestSessionBars(bars) {
+      if (!bars.length) return bars;
+      const lastDate = bars[bars.length - 1].datetime.split(' ')[0];
+      return bars.filter(bar => bar.datetime.startsWith(lastDate));
+    }
+
+    function analyzeIntradayEntry(bars) {
+      if (!bars || bars.length < 25) {
+        return {
+          label: 'WAIT',
+          className: 'entry-wait',
+          text: 'Not enough intraday data yet to make a clean entry decision.',
+          stats: null
+        };
+      }
+
+      const sessionBars = getLatestSessionBars(bars);
+      if (sessionBars.length < 12) {
+        return {
+          label: 'WAIT',
+          className: 'entry-wait',
+          text: 'Need more bars from the current session before confirming an entry.',
+          stats: null
+        };
+      }
+
+      const closes = sessionBars.map(b => b.close);
+      const opens = sessionBars.map(b => b.open);
+      const highs = sessionBars.map(b => b.high);
+      const volumes = sessionBars.map(b => b.volume);
+
+      const ema5Series = ema(closes, 5);
+      const volAvg8 = sma(volumes, 8);
+      const vwapSeries = calculateVWAP(sessionBars);
+
+      const i = closes.length - 1;
+      const prev = i - 1;
+
+      if (prev < 2) {
+        return {
+          label: 'WAIT',
+          className: 'entry-wait',
+          text: 'Not enough price structure yet for an intraday signal.',
+          stats: null
+        };
+      }
+
+      const currentClose = closes[i];
+      const currentOpen = opens[i];
+      const currentHigh = highs[i];
+      const prevHigh = highs[prev];
+      const currentVolume = volumes[i];
+      const avgVolume = volAvg8[i] || 0;
+      const currentVWAP = vwapSeries[i];
+      const prevVWAP = vwapSeries[prev];
+      const currentEMA5 = ema5Series[i];
+
+      const aboveVWAP = currentClose > currentVWAP;
+      const reclaimVWAP = closes[prev] <= prevVWAP && currentClose > currentVWAP;
+      const breakout = currentClose > prevHigh;
+      const bullishCandle = currentClose > currentOpen;
+      const candleStrength = currentHigh > highs[prev] && (currentClose - currentOpen) > 0;
+      const momentum = bullishCandle && candleStrength;
+      const volumeConfirmed = avgVolume > 0 && currentVolume > avgVolume;
+      const extendedPct = currentEMA5 ? ((currentClose - currentEMA5) / currentEMA5) * 100 : 0;
+      const notExtended = extendedPct <= 0.8;
+      const strongBullishContext = aboveVWAP || reclaimVWAP;
+
+      let label = 'WAIT';
+      let className = 'entry-wait';
+      let text = 'Intraday setup is forming, but it still needs cleaner confirmation.';
+
+      if (strongBullishContext && breakout && momentum && volumeConfirmed && notExtended) {
+        label = 'ENTER NOW';
+        className = 'entry-good';
+        text = 'Price is above VWAP, breaking recent intraday highs with momentum and volume, and it is not overly stretched. This is the kind of entry window you want for short-term calls.';
+      } else if (!strongBullishContext && !breakout) {
+        label = 'DO NOT ENTER';
+        className = 'entry-no';
+        text = 'Price is not in bullish control intraday yet. It is below VWAP and has not proven strength with a breakout.';
+      } else if (strongBullishContext && breakout && !volumeConfirmed) {
+        label = 'WAIT';
+        className = 'entry-wait';
+        text = 'The breakout is there, but volume is not confirming strongly yet. Let it prove itself before you chase it.';
+      } else if (strongBullishContext && breakout && momentum && !notExtended) {
+        label = 'WAIT';
+        className = 'entry-wait';
+        text = 'The setup looks strong, but price is extended above the 5 EMA right now. Better to wait for a cleaner pullback or brief reset.';
+      } else if (!aboveVWAP && !reclaimVWAP) {
+        label = 'DO NOT ENTER';
+        className = 'entry-no';
+        text = 'VWAP is not supporting the trade right now. For calls, you want buyers clearly controlling the session.';
+      }
+
+      return {
+        label,
+        className,
+        text,
+        stats: {
+          close: currentClose.toFixed(2),
+          vwap: currentVWAP.toFixed(2),
+          ema5: currentEMA5 ? currentEMA5.toFixed(2) : 'n/a',
+          prevHigh: prevHigh.toFixed(2),
+          volume: currentVolume,
+          avgVolume: avgVolume ? Math.round(avgVolume) : null,
+          extendedPct: extendedPct.toFixed(2),
+          checks: {
+            aboveVWAP,
+            reclaimVWAP,
+            breakout,
+            momentum,
+            volumeConfirmed,
+            notExtended
+          }
+        }
       };
     }
 
@@ -900,6 +1046,17 @@
       return { rows: out, source: cached.length ? 'mixed' : 'fresh' };
     }
 
+    async function fetchIntradayTicker(symbol, apiKey) {
+      const url = `${API_ROOT}?symbol=${encodeURIComponent(symbol)}&interval=${INTRADAY_INTERVAL}&outputsize=${INTRADAY_OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data?.message || 'Intraday request failed');
+      if (!data?.values) throw new Error('No intraday data returned');
+
+      return normalizeSeries(data.values.slice().reverse());
+    }
+
     function formatUpdatedTime() {
       return new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/Chicago',
@@ -923,15 +1080,15 @@
 
       const bars = normalizeSeries(data.values.slice().reverse());
       const closes = bars.map(b => b.close);
-      const ema5 = ema(closes, 5);
-      const ema20 = ema(closes, 20);
+      const ema5Series = ema(closes, 5);
+      const ema20Series = ema(closes, 20);
       const { macdLine, signalLine } = macd(closes);
       const rsi14 = rsi(closes, 14);
       const i = closes.length - 1;
 
       let label = 'neutral';
-      if (closes[i] > ema20[i] && ema5[i] > ema20[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) label = 'bullish';
-      else if (closes[i] < ema20[i] && ema5[i] < ema20[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) label = 'bearish';
+      if (closes[i] > ema20Series[i] && ema5Series[i] > ema20Series[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) label = 'bullish';
+      else if (closes[i] < ema20Series[i] && ema5Series[i] < ema20Series[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) label = 'bearish';
 
       const result = { label, detail: `SPY ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'}` };
       localStorage.setItem(cacheKey, JSON.stringify(result));
@@ -974,8 +1131,45 @@
       `;
     }
 
+    function renderIntradaySignal(signal) {
+      if (!signal) return '';
+
+      const checks = signal.stats?.checks;
+      const checkRows = checks ? `
+        <div class="detail-grid" style="margin-top:10px;">
+          <div class="indicator-row"><span class="${checks.aboveVWAP ? 'check' : 'xmark'}">${checks.aboveVWAP ? '✓' : '✕'}</span><span>Above VWAP</span></div>
+          <div class="indicator-row"><span class="${checks.reclaimVWAP ? 'check' : 'xmark'}">${checks.reclaimVWAP ? '✓' : '✕'}</span><span>Reclaimed VWAP</span></div>
+          <div class="indicator-row"><span class="${checks.breakout ? 'check' : 'xmark'}">${checks.breakout ? '✓' : '✕'}</span><span>Break above previous 5-min high</span></div>
+          <div class="indicator-row"><span class="${checks.momentum ? 'check' : 'xmark'}">${checks.momentum ? '✓' : '✕'}</span><span>Bullish momentum candle</span></div>
+          <div class="indicator-row"><span class="${checks.volumeConfirmed ? 'check' : 'xmark'}">${checks.volumeConfirmed ? '✓' : '✕'}</span><span>Volume above recent average</span></div>
+          <div class="indicator-row"><span class="${checks.notExtended ? 'check' : 'xmark'}">${checks.notExtended ? '✓' : '✕'}</span><span>Not overly extended</span></div>
+        </div>
+      ` : '';
+
+      const stats = signal.stats ? `
+        <div class="stats-grid" style="margin-top:12px;">
+          <div class="stat-chip">Close: ${signal.stats.close}</div>
+          <div class="stat-chip">VWAP: ${signal.stats.vwap}</div>
+          <div class="stat-chip">5 EMA: ${signal.stats.ema5}</div>
+          <div class="stat-chip">Prev 5m High: ${signal.stats.prevHigh}</div>
+          <div class="stat-chip">Vol: ${signal.stats.volume}</div>
+          <div class="stat-chip">Avg Vol: ${signal.stats.avgVolume ?? 'n/a'}</div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="entry-box">
+          <div class="entry-title">Intraday Entry Signal</div>
+          <div class="entry-pill ${signal.className}">${signal.label}</div>
+          <div class="detail-text">${signal.text}</div>
+          ${checkRows}
+          ${stats}
+        </div>
+      `;
+    }
+
     function renderCard(item, options = {}) {
-      const { isRisky = false, rank = null, topHighlight = false } = options;
+      const { isRisky = false, rank = null, topHighlight = false, intradaySignal = null } = options;
       const card = document.createElement('div');
       card.className = `stock-card clickable ${topHighlight ? 'top-highlight' : ''}`;
 
@@ -1009,11 +1203,12 @@
           <div class="detail-grid">${renderIndicators(item, isRisky)}</div>
           ${renderStats(item)}
           <div class="entry-box">
-            <div class="entry-title">Entry Timing</div>
+            <div class="entry-title">Daily Entry Timing</div>
             <div class="entry-pill ${entry.className}">${entry.label}</div>
             <div class="detail-text">${entry.text}</div>
           </div>
-          <div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${buildTradeIdea(item, isRisky)}</div>
+          ${renderIntradaySignal(intradaySignal)}
+          <div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${buildTradeIdea(item, isRisky, intradaySignal)}</div>
         </div>
       `;
 
@@ -1127,20 +1322,34 @@
       document.getElementById('status').textContent = `Checking ${ticker}...`;
 
       try {
-        const result = await fetchChunk([ticker], apiKey, true);
-        const item = result.rows[0];
+        const dailyResult = await fetchChunk([ticker], apiKey, true);
+        const item = dailyResult.rows[0];
 
         if (!item) {
-          resultEl.innerHTML = `<div class="note-card">No data returned for ${ticker}.</div>`;
+          resultEl.innerHTML = `<div class="note-card">No daily data returned for ${ticker}.</div>`;
           return;
         }
 
-        const card = renderCard(item);
+        let intradaySignal = null;
+        try {
+          const intradayBars = await fetchIntradayTicker(ticker, apiKey);
+          intradaySignal = analyzeIntradayEntry(intradayBars);
+        } catch (intradayErr) {
+          intradaySignal = {
+            label: 'WAIT',
+            className: 'entry-wait',
+            text: `Intraday check unavailable right now: ${intradayErr.message}`,
+            stats: null
+          };
+        }
+
+        const card = renderCard(item, { intradaySignal });
         resultEl.appendChild(card);
+
         const panel = card.querySelector('.detail-panel');
         panel.style.display = 'block';
 
-        document.getElementById('status').textContent = `${ticker} checked.`;
+        document.getElementById('status').textContent = `${ticker} checked with daily + intraday logic.`;
       } catch (err) {
         resultEl.innerHTML = `<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;
         document.getElementById('status').textContent = `Could not check ${ticker}.`;
