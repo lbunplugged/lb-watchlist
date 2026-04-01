@@ -34,7 +34,7 @@
     .wrap {
       max-width: 760px;
       margin: 0 auto;
-      padding: 28px 18px 48px;
+      padding: 24px 18px 40px;
     }
 
     .hero,
@@ -43,9 +43,9 @@
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
       border: 1px solid var(--border-soft);
       border-radius: 22px;
-      padding: 18px;
+      padding: 16px;
       box-shadow: var(--shadow);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       transition: box-shadow 0.22s ease, border-color 0.22s ease;
     }
 
@@ -62,7 +62,7 @@
     }
 
     .subtitle {
-      margin-top: 12px;
+      margin-top: 10px;
       color: #d8c48b;
       font-size: 15px;
       line-height: 1.55;
@@ -70,7 +70,7 @@
     }
 
     .legend {
-      margin-top: 14px;
+      margin-top: 12px;
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
@@ -96,7 +96,19 @@
       font-weight: 800;
       letter-spacing: 0.14em;
       text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .workflow-line {
+      margin-top: 6px;
       margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(212,175,55,0.16);
+      background: rgba(212,175,55,0.05);
+      color: #e5d9b8;
+      font-size: 13px;
+      line-height: 1.45;
     }
 
     .stack {
@@ -156,7 +168,7 @@
     }
 
     .status-box {
-      margin-top: 12px;
+      margin-top: 10px;
       padding: 14px;
       border-radius: 16px;
       background: rgba(255,255,255,0.02);
@@ -187,7 +199,7 @@
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 18px;
       padding: 14px;
-      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
     }
 
     .stock-card.clickable {
@@ -201,9 +213,28 @@
     }
 
     .stock-card.top-highlight {
-      border-color: rgba(212,175,55,0.44);
-      background: linear-gradient(180deg, rgba(212,175,55,0.12), rgba(255,255,255,0.02));
-      box-shadow: 0 0 0 1px rgba(212,175,55,0.08), 0 16px 36px rgba(0,0,0,0.42);
+      border-color: rgba(56,210,122,0.42);
+      background: linear-gradient(180deg, rgba(56,210,122,0.10), rgba(255,255,255,0.02));
+      box-shadow:
+        0 0 0 1px rgba(56,210,122,0.10),
+        0 0 26px rgba(56,210,122,0.16),
+        0 16px 36px rgba(0,0,0,0.42);
+    }
+
+    .best-setup-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #dfffe9;
+      background: rgba(56,210,122,0.12);
+      border: 1px solid rgba(56,210,122,0.24);
     }
 
     .stock-top {
@@ -235,7 +266,7 @@
     }
 
     .fire-badge {
-      color: #ffd36c;
+      color: #7ff0a8;
       font-size: 18px;
     }
 
@@ -321,7 +352,7 @@
 
     .detail-panel {
       display: none;
-      margin-top: 14px;
+      margin-top: 12px;
       padding-top: 12px;
       border-top: 1px solid rgba(255,255,255,0.06);
     }
@@ -431,6 +462,17 @@
       border: 1px solid rgba(255,95,109,0.26);
     }
 
+    .rule-line {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #d9cfb1;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.02);
+    }
+
     .note-card {
       padding: 14px;
       border-radius: 18px;
@@ -441,18 +483,8 @@
       line-height: 1.55;
     }
 
-    .section-card.flash {
-      animation: flashGold 1.2s ease;
-    }
-
-    @keyframes flashGold {
-      0% { box-shadow: 0 0 0 rgba(212,175,55,0); border-color: rgba(255,255,255,0.06); }
-      35% { box-shadow: 0 0 0 1px rgba(212,175,55,0.18), 0 0 28px rgba(212,175,55,0.18); border-color: rgba(212,175,55,0.42); }
-      100% { box-shadow: var(--shadow); border-color: rgba(255,255,255,0.06); }
-    }
-
     .footer {
-      margin-top: 18px;
+      margin-top: 16px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.65;
@@ -474,17 +506,18 @@
 
     <div class="control-card">
       <div class="control-label">Access</div>
+      <div class="workflow-line">
+        Step 1: Scan Market → Step 2: Pick a ticker → Step 3: Check entry timing
+      </div>
       <div class="stack">
         <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
         <div class="button-grid">
           <button id="saveKeyBtn">Save Key</button>
-          <button id="showBtn">Scan</button>
-          <button id="morningBtn">Check My Picks</button>
-          <button id="refreshBtn">Force Refresh</button>
+          <button id="showBtn">Scan Market</button>
         </div>
       </div>
       <div class="status-box">
-        <div class="status" id="status">Ready. Save your API key, then scan.</div>
+        <div class="status" id="status">Ready. Save your API key, then scan the market.</div>
         <div class="meta" id="metaInfo">Last updated: -- · Data source: -- · Market trend: --</div>
       </div>
     </div>
@@ -507,18 +540,13 @@
       <div id="riskyOne" class="list"></div>
     </div>
 
-    <div class="section-card" id="savedPicksSection">
-      <div class="section-title">Saved Picks Morning Check</div>
-      <div id="savedPicks" class="list"></div>
-    </div>
-
     <div class="section-card">
-      <div class="section-title">Single Ticker Result</div>
+      <div class="section-title">Execution Check</div>
       <div id="singleTickerResult"></div>
     </div>
 
     <div class="footer">
-      Scan ranks and saves your top names. Check My Picks brings those same saved names back in the morning so your workflow stays consistent. Tap any card for the full explanation, indicator checklist, confidence score, entry timing, intraday trigger, and quick trade idea.
+      Scan the market to find your strongest daily setups. Then use the execution check to see whether intraday price action supports an entry right now.
     </div>
   </div>
 
@@ -546,7 +574,7 @@
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-clean-v3';
+    const CACHE_PREFIX = 'lb-watchlist-clean-v4';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
@@ -585,12 +613,6 @@
 
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    function clearCacheOnly() {
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(CACHE_PREFIX)) localStorage.removeItem(key);
-      });
     }
 
     function ema(values, period) {
@@ -826,12 +848,15 @@
 
     function buildTradeIdea(item, isRisky = false, intradaySignal = null) {
       if (intradaySignal?.label === 'ENTER NOW') {
-        return 'Daily setup is good and intraday confirms buyers are in control right now. This is the kind of moment where a short-term call entry makes sense.';
+        if (item.verdict !== 'strong') {
+          return 'Intraday may look active, but the daily setup is not strong enough to justify the trade. Let the daily chart stay in control.';
+        }
+        return 'Daily setup is strong and intraday confirms buyers are in control right now. This is the kind of moment where a short-term call entry makes sense.';
       }
       if (intradaySignal?.label === 'WAIT') {
         return 'Daily setup may still be solid, but intraday says do not force it yet. Let price confirm more cleanly before stepping into calls.';
       }
-      if (intradaySignal?.label === 'DO NOT ENTER') {
+      if (intradaySignal?.label === 'STAY OUT') {
         return 'Daily setup may exist, but intraday is not giving you a quality call entry right now. Better to protect capital and move on.';
       }
 
@@ -854,7 +879,7 @@
 
       if (isRisky) {
         return {
-          label: 'Wait for Better Entry',
+          label: 'WAIT',
           className: 'entry-wait',
           text: 'Interesting early reversal, but this is not the cleanest trigger point. Let price prove itself and avoid forcing the entry.'
         };
@@ -862,7 +887,7 @@
 
       if (item.verdict === 'avoid') {
         return {
-          label: 'No Entry',
+          label: 'STAY OUT',
           className: 'entry-no',
           text: 'The setup itself is not good enough right now, so this is not a valid entry window for your strategy.'
         };
@@ -877,7 +902,7 @@
 
       if (trendConfirmed && momentumConfirmed && healthyRsi && pricePushing && notTooExtended && above20) {
         return {
-          label: 'Good Entry Window',
+          label: 'ENTER WINDOW',
           className: 'entry-good',
           text: 'This is a solid moment to consider entry. Trend is confirmed, momentum is active, RSI is still in a healthy zone, and price is not too stretched.'
         };
@@ -885,14 +910,14 @@
 
       if (trendConfirmed && momentumConfirmed) {
         return {
-          label: 'Wait for Better Entry',
+          label: 'WAIT',
           className: 'entry-wait',
           text: 'Good setup, but not the best window to enter. Price looks a little extended or the push is not clean enough yet, so patience may give you a better spot.'
         };
       }
 
       return {
-        label: 'No Entry',
+        label: 'STAY OUT',
         className: 'entry-no',
         text: 'The setup may be on watch, but this is not a clean entry trigger right now because momentum and price behavior are not aligned enough.'
       };
@@ -975,7 +1000,7 @@
         className = 'entry-good';
         text = 'Price is above VWAP, breaking recent intraday highs with momentum and volume, and it is not overly stretched. This is the kind of entry window you want for short-term calls.';
       } else if (!strongBullishContext && !breakout) {
-        label = 'DO NOT ENTER';
+        label = 'STAY OUT';
         className = 'entry-no';
         text = 'Price is not in bullish control intraday yet. It is below VWAP and has not proven strength with a breakout.';
       } else if (strongBullishContext && breakout && !volumeConfirmed) {
@@ -987,7 +1012,7 @@
         className = 'entry-wait';
         text = 'The setup looks strong, but price is extended above the 5 EMA right now. Better to wait for a cleaner pullback or brief reset.';
       } else if (!aboveVWAP && !reclaimVWAP) {
-        label = 'DO NOT ENTER';
+        label = 'STAY OUT';
         className = 'entry-no';
         text = 'VWAP is not supporting the trade right now. For calls, you want buyers clearly controlling the session.';
       }
@@ -1073,7 +1098,7 @@
         }
       }
 
-      const url = `${API_ROOT}?symbol=SPY&interval=1day&outputsize=80&apikey=${encodeURIComponent(apiKey)}`;
+      const url = `${API_ROOT}?symbol=SPY&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok || !data?.values) return { label: 'unknown', detail: 'SPY unavailable' };
@@ -1164,6 +1189,9 @@
           <div class="detail-text">${signal.text}</div>
           ${checkRows}
           ${stats}
+          <div class="rule-line">
+            Only act on ENTER NOW when the daily setup is Strong.
+          </div>
         </div>
       `;
     }
@@ -1180,6 +1208,7 @@
       const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
       const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
       const entry = getEntryTiming(item, isRisky);
+      const bestLabel = topHighlight ? '<div class="best-setup-label">Best Setup Right Now</div>' : '';
 
       card.innerHTML = `
         <div class="stock-top">
@@ -1195,7 +1224,8 @@
             <div class="confidence">${confidence}%</div>
           </div>
         </div>
-        <div class="quick-line">${topHighlight ? '🔥 Best setup today. ' : ''}${quickSummary(item, isRisky)}</div>
+        ${bestLabel}
+        <div class="quick-line">${topHighlight ? '🔥 Best setup on the board right now. ' : ''}${quickSummary(item, isRisky)}</div>
         <div class="tap-line">Tap for full details</div>
         <div id="${summaryId}" class="detail-panel">
           <div class="detail-title">Full Breakdown</div>
@@ -1220,25 +1250,6 @@
       return card;
     }
 
-    function loadSavedBundle() {
-      const raw = localStorage.getItem('lb_saved_picks');
-      if (!raw) return null;
-      try { return JSON.parse(raw); } catch (_) { return null; }
-    }
-
-    function renderSavedPicksOnly() {
-      const savedEl = document.getElementById('savedPicks');
-      savedEl.innerHTML = '';
-      const saved = loadSavedBundle();
-      if (!saved) {
-        savedEl.innerHTML = '<div class="note-card">No saved picks yet. Run Scan first, then come back and use Check My Picks.</div>';
-        return;
-      }
-
-      saved.ranked.forEach((item, idx) => savedEl.appendChild(renderCard(item, { rank: idx + 1 })));
-      if (saved.risky) savedEl.appendChild(renderCard(saved.risky, { isRisky: true }));
-    }
-
     async function runScan(forceRefresh = false) {
       const apiKey = document.getElementById('apiKey').value.trim();
       const status = document.getElementById('status');
@@ -1253,8 +1264,8 @@
         return;
       }
 
-      status.textContent = forceRefresh ? 'Force refreshing watchlist...' : 'Scanning watchlist...';
-      updateMetaInfo('--', forceRefresh ? 'fresh requested' : '--', null);
+      status.textContent = 'Scanning market...';
+      updateMetaInfo('--', '--', null);
 
       const all = [];
       const sourcesSeen = new Set();
@@ -1265,7 +1276,7 @@
 
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        status.textContent = `${forceRefresh ? 'Refreshing' : 'Scanning'} batch ${i + 1} of ${chunks.length}... ${chunk.join(', ')}`;
+        status.textContent = `Scanning batch ${i + 1} of ${chunks.length}... ${chunk.join(', ')}`;
 
         try {
           const result = await fetchChunk(chunk, apiKey, forceRefresh);
@@ -1293,19 +1304,15 @@
       const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
       const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
 
-      localStorage.setItem('lb_saved_picks', JSON.stringify({ ranked, risky, savedAt: new Date().toISOString() }));
-
       ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, { rank: idx + 1, topHighlight: idx === 0 })));
       if (risky) riskyOne.appendChild(renderCard(risky, { isRisky: true }));
 
       let dataSource = 'cached';
       if (sourcesSeen.has('fresh') && sourcesSeen.size === 1) dataSource = 'fresh';
       else if (sourcesSeen.has('mixed') || (sourcesSeen.has('fresh') && sourcesSeen.has('cached'))) dataSource = 'mixed';
-      else if (forceRefresh) dataSource = 'fresh requested';
 
-      status.textContent = `Done. Ranked ${all.length} tickers and saved your picks.`;
+      status.textContent = `Done. Ranked ${all.length} tickers.`;
       updateMetaInfo(formatUpdatedTime(), dataSource, marketTrend);
-      renderSavedPicksOnly();
     }
 
     async function checkSingleTicker() {
@@ -1366,25 +1373,9 @@
 
     document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
     document.getElementById('showBtn').addEventListener('click', () => runScan(false));
-    document.getElementById('morningBtn').addEventListener('click', () => {
-      renderSavedPicksOnly();
-      const section = document.getElementById('savedPicksSection');
-      if (section) {
-        section.classList.remove('flash');
-        void section.offsetWidth;
-        section.classList.add('flash');
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      clearCacheOnly();
-      updateMetaInfo('--', 'cache cleared', null);
-      runScan(true);
-    });
     document.getElementById('checkTickerBtn').addEventListener('click', checkSingleTicker);
 
     loadApiKey();
-    renderSavedPicksOnly();
   </script>
 </body>
 </html>
