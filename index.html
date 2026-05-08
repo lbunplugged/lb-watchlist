@@ -16,6 +16,7 @@
       --green: #38d27a;
       --yellow: #f0c84b;
       --red: #ff5f6d;
+      --blue: #7f9fff;
       --shadow: 0 12px 40px rgba(0,0,0,0.45);
     }
 
@@ -49,9 +50,7 @@
       transition: box-shadow 0.22s ease, border-color 0.22s ease;
     }
 
-    .hero {
-      border-color: var(--border);
-    }
+    .hero { border-color: var(--border); }
 
     h1 {
       margin: 0;
@@ -140,6 +139,16 @@
       gap: 10px;
     }
 
+    .button-grid.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    @media (max-width: 560px) {
+      .button-grid.three {
+        grid-template-columns: 1fr;
+      }
+    }
+
     button {
       width: 100%;
       background: linear-gradient(180deg, #141416, #0d0d10);
@@ -155,9 +164,7 @@
       transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
     }
 
-    button:hover {
-      background: linear-gradient(180deg, #18181c, #111116);
-    }
+    button:hover { background: linear-gradient(180deg, #18181c, #111116); }
 
     button.button-active,
     button:active {
@@ -165,6 +172,11 @@
       border-color: rgba(212,175,55,0.50);
       box-shadow: 0 0 0 1px rgba(212,175,55,0.10), 0 0 24px rgba(212,175,55,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
       transform: translateY(1px);
+    }
+
+    .find-btn {
+      border-color: rgba(56,210,122,0.38);
+      background: linear-gradient(180deg, rgba(56,210,122,0.18), rgba(13,13,16,0.96));
     }
 
     .status-box {
@@ -189,10 +201,7 @@
       line-height: 1.5;
     }
 
-    .list {
-      display: grid;
-      gap: 10px;
-    }
+    .list { display: grid; gap: 10px; }
 
     .stock-card {
       background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
@@ -202,9 +211,7 @@
       transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
     }
 
-    .stock-card.clickable {
-      cursor: pointer;
-    }
+    .stock-card.clickable { cursor: pointer; }
 
     .stock-card.clickable:hover {
       border-color: rgba(212,175,55,0.24);
@@ -270,9 +277,7 @@
       font-size: 18px;
     }
 
-    .ticker-wrap {
-      min-width: 0;
-    }
+    .ticker-wrap { min-width: 0; }
 
     .ticker {
       font-size: 24px;
@@ -341,12 +346,13 @@
       margin-top: 10px;
       font-size: 13px;
       color: #ded7c2;
+      line-height: 1.45;
     }
 
     .tap-line {
       margin-top: 8px;
       font-size: 11px;
-      color: #7f9fff;
+      color: var(--blue);
       letter-spacing: 0.02em;
     }
 
@@ -386,21 +392,16 @@
       color: #e7e1cf;
     }
 
-    .check {
-      color: var(--green);
+    .check,
+    .xmark {
       font-weight: 900;
       font-size: 17px;
       width: 18px;
       text-align: center;
     }
 
-    .xmark {
-      color: var(--red);
-      font-weight: 900;
-      font-size: 17px;
-      width: 18px;
-      text-align: center;
-    }
+    .check { color: var(--green); }
+    .xmark { color: var(--red); }
 
     .stats-grid {
       display: grid;
@@ -507,13 +508,14 @@
     <div class="control-card">
       <div class="control-label">Access</div>
       <div class="workflow-line">
-        Step 1: Scan Market → Step 2: Pick a ticker → Step 3: Check entry timing
+        Step 1: Scan Market → Step 2: Pick a ticker → Step 3: Check entry timing → Or use Find Me One for a live intraday opportunity search.
       </div>
       <div class="stack">
         <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
-        <div class="button-grid">
+        <div class="button-grid three">
           <button id="saveKeyBtn">Save Key</button>
           <button id="showBtn">Scan Market</button>
+          <button id="findOneBtn" class="find-btn">Find Me One</button>
         </div>
       </div>
       <div class="status-box">
@@ -527,6 +529,13 @@
       <div class="stack">
         <input id="singleTickerInput" type="text" placeholder="Enter ticker symbol" />
         <button id="checkTickerBtn">Check Ticker</button>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Find Me One Result</div>
+      <div id="findOneResult" class="list">
+        <div class="note-card">Click Find Me One to scan 15 high-volume names for the cleanest intraday setup right now.</div>
       </div>
     </div>
 
@@ -546,7 +555,7 @@
     </div>
 
     <div class="footer">
-      Scan the market to find your strongest daily setups. Then use the execution check to see whether intraday price action supports an entry right now.
+      Scan the market to find your strongest daily setups. Use Find Me One when you want the system to search high-volume names for the cleanest intraday opportunity right now.
     </div>
   </div>
 
@@ -573,13 +582,20 @@
       'BABA','PDD','JD','BIDU','NOK','SAP','NVO','RACE','MELI','SE'
     ];
 
+    const FIND_ME_ONE_LIST = [
+      'QQQ','SPY','IWM',
+      'NVDA','TSLA','AAPL','MSFT','META',
+      'AMD','AMZN','NFLX','COIN',
+      'JPM','GS','SMH'
+    ];
+
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-clean-v4';
+    const CACHE_PREFIX = 'lb-watchlist-clean-v5';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
     const INTRADAY_INTERVAL = '5min';
-    const INTRADAY_OUTPUTSIZE = 60;
+    const INTRADAY_OUTPUTSIZE = 80;
 
     function getMarketDateKey() {
       const now = new Date();
@@ -648,6 +664,8 @@
 
     function rsi(values, period = 14) {
       const out = new Array(values.length).fill(null);
+      if (values.length <= period) return out;
+
       let gains = 0;
       let losses = 0;
       for (let i = 1; i <= period; i++) {
@@ -658,6 +676,7 @@
       let avgGain = gains / period;
       let avgLoss = losses / period;
       out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+
       for (let i = period + 1; i < values.length; i++) {
         const diff = values[i] - values[i - 1];
         const gain = diff > 0 ? diff : 0;
@@ -705,7 +724,7 @@
         close: Number(v.close),
         volume: Number(v.volume || 0),
         datetime: v.datetime
-      }));
+      })).filter(v => Number.isFinite(v.close));
     }
 
     function getVerdictFromScore(score) {
@@ -800,47 +819,14 @@
         parts.push(`${item.ticker} does not fit your current call strategy right now. Too many pieces are missing, so this is an avoid name unless the chart improves.`);
       }
 
-      if (item.checks.priceAbove20) {
-        parts.push(`Price is above the 20 EMA, which tells you the broader short-term trend is still supportive.`);
-      } else {
-        parts.push(`Price is below the 20 EMA, which tells you the broader short-term trend is not supporting the setup right now.`);
-      }
-
-      if (item.checks.emaBullish) {
-        parts.push(`The 5 EMA is bullish versus the 20 EMA, showing recent price action has more strength than the broader average.`);
-      } else {
-        parts.push(`The 5 EMA is not giving you a bullish crossover advantage, so short-term strength is not clearly leading.`);
-      }
-
-      if (item.checks.macdBullish) {
-        parts.push(`MACD is bullish, which suggests momentum is still leaning upward rather than fading.`);
-      } else {
-        parts.push(`MACD is not bullish, so momentum is not giving you strong confirmation yet.`);
-      }
-
-      const rsiValue = item.stats.rsi;
-      if (item.checks.rsiBullish) {
-        parts.push(`RSI is in a healthy zone at ${rsiValue}, which suggests strength without looking too stretched.`);
-      } else {
-        parts.push(`RSI is at ${rsiValue}, which is outside your preferred zone and weakens the setup quality.`);
-      }
-
-      if (item.checks.volumeBullish) {
-        parts.push(`Volume is supporting the move, which adds participation and confirmation.`);
-      } else {
-        parts.push(`Volume is not confirming the move, so participation is the main weak spot here.`);
-      }
+      parts.push(item.checks.priceAbove20 ? `Price is above the 20 EMA, which tells you the broader short-term trend is still supportive.` : `Price is below the 20 EMA, which tells you the broader short-term trend is not supporting the setup right now.`);
+      parts.push(item.checks.emaBullish ? `The 5 EMA is bullish versus the 20 EMA, showing recent price action has more strength than the broader average.` : `The 5 EMA is not giving you a bullish crossover advantage, so short-term strength is not clearly leading.`);
+      parts.push(item.checks.macdBullish ? `MACD is bullish, which suggests momentum is still leaning upward rather than fading.` : `MACD is not bullish, so momentum is not giving you strong confirmation yet.`);
+      parts.push(item.checks.rsiBullish ? `RSI is in a healthy zone at ${item.stats.rsi}, which suggests strength without looking too stretched.` : `RSI is at ${item.stats.rsi}, which is outside your preferred zone and weakens the setup quality.`);
+      parts.push(item.checks.volumeBullish ? `Volume is supporting the move, which adds participation and confirmation.` : `Volume is not confirming the move, so participation is the main weak spot here.`);
 
       if (item.verdict === 'strong' && !item.checks.volumeBullish) {
         parts.push(`That means the setup is strong, but not perfect. You have trend and momentum, but not full participation confirmation.`);
-      }
-
-      if (item.verdict === 'watch') {
-        parts.push(`For your style, that means keep it close, but wait for better confirmation before forcing a call entry.`);
-      }
-
-      if (item.verdict === 'avoid') {
-        parts.push(`For your style, this is the kind of chart you leave alone until multiple conditions improve.`);
       }
 
       return parts.join(' ');
@@ -927,6 +913,22 @@
       if (!bars.length) return bars;
       const lastDate = bars[bars.length - 1].datetime.split(' ')[0];
       return bars.filter(bar => bar.datetime.startsWith(lastDate));
+    }
+
+    function percentChangeFromOpen(sessionBars) {
+      if (!sessionBars || sessionBars.length < 2) return 0;
+      const open = sessionBars[0].open || sessionBars[0].close;
+      const close = sessionBars[sessionBars.length - 1].close;
+      return open ? ((close - open) / open) * 100 : 0;
+    }
+
+    function getPreviousHigh(sessionBars, currentIndex) {
+      if (!sessionBars || currentIndex <= 0) return null;
+      let high = -Infinity;
+      for (let i = 0; i < currentIndex; i++) {
+        if (sessionBars[i].high > high) high = sessionBars[i].high;
+      }
+      return Number.isFinite(high) ? high : null;
     }
 
     function analyzeIntradayEntry(bars) {
@@ -1041,6 +1043,118 @@
       };
     }
 
+    function getMarketCompareSymbol(ticker) {
+      const qqqNames = new Set(['QQQ','NVDA','TSLA','AAPL','MSFT','META','AMD','AMZN','NFLX','COIN','SMH']);
+      return qqqNames.has(ticker) ? 'QQQ' : 'SPY';
+    }
+
+    function analyzeFindMeOneTicker(ticker, tickerBars, spyBars, qqqBars) {
+      const signal = analyzeIntradayEntry(tickerBars);
+      const sessionBars = getLatestSessionBars(tickerBars);
+
+      if (!sessionBars || sessionBars.length < 12 || !signal.stats) {
+        return {
+          ticker,
+          score: 0,
+          label: 'WAIT',
+          className: 'entry-wait',
+          text: signal.text || 'Not enough current session bars.',
+          signal,
+          checks: null,
+          sessionBars
+        };
+      }
+
+      const i = sessionBars.length - 1;
+      const closes = sessionBars.map(b => b.close);
+      const vwapSeries = calculateVWAP(sessionBars);
+      const previousSessionHigh = getPreviousHigh(sessionBars, i);
+      const currentClose = closes[i];
+
+      const tickerChange = percentChangeFromOpen(sessionBars);
+
+      const spySession = getLatestSessionBars(spyBars || []);
+      const qqqSession = getLatestSessionBars(qqqBars || []);
+      const spyVWAP = spySession.length ? calculateVWAP(spySession) : [];
+      const qqqVWAP = qqqSession.length ? calculateVWAP(qqqSession) : [];
+
+      const spyAboveVWAP = spySession.length >= 12 && spySession.at(-1).close > spyVWAP.at(-1);
+      const qqqAboveVWAP = qqqSession.length >= 12 && qqqSession.at(-1).close > qqqVWAP.at(-1);
+
+      const marketSupportive = ticker === 'SPY'
+        ? spyAboveVWAP
+        : ticker === 'QQQ'
+          ? qqqAboveVWAP
+          : spyAboveVWAP || qqqAboveVWAP;
+
+      const strongMarketSupport = spyAboveVWAP && qqqAboveVWAP;
+      const keyLevelBreak = previousSessionHigh !== null && currentClose > previousSessionHigh;
+
+      const compareSymbol = getMarketCompareSymbol(ticker);
+      const compareSession = compareSymbol === 'QQQ' ? qqqSession : spySession;
+      const marketChange = percentChangeFromOpen(compareSession);
+      const relativeStrength = ticker === compareSymbol ? true : tickerChange > marketChange;
+
+      const c = signal.stats.checks;
+
+      let score = 0;
+      if (c.aboveVWAP) score += 15;
+      if (c.reclaimVWAP) score += 10;
+      if (c.breakout) score += 15;
+      if (c.momentum) score += 15;
+      if (c.volumeConfirmed) score += 15;
+      if (c.notExtended) score += 10;
+      if (marketSupportive) score += 10;
+      if (keyLevelBreak) score += 5;
+      if (relativeStrength) score += 5;
+
+      const mustHave = c.aboveVWAP && c.breakout && c.momentum && c.notExtended;
+      const idealSetup = mustHave && c.volumeConfirmed && marketSupportive && relativeStrength;
+
+      let label = 'NO TRADE';
+      let className = 'entry-no';
+      let text = 'No clean setup right now. Stay patient.';
+
+      if (score >= 75 && mustHave) {
+        label = 'FIND ME ONE';
+        className = 'entry-good';
+        text = `${ticker} is the best setup right now. Buyers are in control, price is above VWAP, breaking highs, showing momentum, and the broader market/relative strength checks support the move.`;
+      } else if (score >= 60) {
+        label = 'WATCH ONLY';
+        className = 'entry-wait';
+        text = `${ticker} is the closest setup, but it is not fully clean yet. Wait for stronger confirmation before forcing an entry.`;
+      }
+
+      return {
+        ticker,
+        score,
+        label,
+        className,
+        text,
+        signal,
+        mustHave,
+        idealSetup,
+        checks: {
+          ...c,
+          marketSupportive,
+          strongMarketSupport,
+          keyLevelBreak,
+          relativeStrength,
+          spyAboveVWAP,
+          qqqAboveVWAP
+        },
+        stats: {
+          close: currentClose.toFixed(2),
+          vwap: vwapSeries[i].toFixed(2),
+          previousSessionHigh: previousSessionHigh ? previousSessionHigh.toFixed(2) : 'n/a',
+          tickerChange: tickerChange.toFixed(2),
+          compareSymbol,
+          marketChange: marketChange.toFixed(2),
+          score
+        }
+      };
+    }
+
     async function fetchChunk(symbols, apiKey, forceRefresh = false) {
       const cached = [];
       const uncached = [];
@@ -1064,6 +1178,7 @@
         const item = entries[symbol];
         if (!item || !item.values) continue;
         const ascBars = normalizeSeries(item.values.slice().reverse());
+        if (ascBars.length < 30) continue;
         const scored = scoreTickerFromBars(symbol, ascBars);
         localStorage.setItem(getCacheKey(symbol), JSON.stringify(scored));
         out.push(scored);
@@ -1080,6 +1195,21 @@
       if (!data?.values) throw new Error('No intraday data returned');
 
       return normalizeSeries(data.values.slice().reverse());
+    }
+
+    async function fetchIntradayBatch(symbols, apiKey) {
+      const url = `${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=${INTRADAY_INTERVAL}&outputsize=${INTRADAY_OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data?.message || 'Intraday batch request failed');
+
+      const out = {};
+      for (const symbol of symbols) {
+        const item = data[symbol];
+        if (item?.values) out[symbol] = normalizeSeries(item.values.slice().reverse());
+      }
+      return out;
     }
 
     function formatUpdatedTime() {
@@ -1194,6 +1324,88 @@
           </div>
         </div>
       `;
+    }
+
+    function renderFindOneChecks(result) {
+      if (!result?.checks) return '';
+      const checks = result.checks;
+      const rows = [
+        ['Above VWAP', checks.aboveVWAP],
+        ['VWAP reclaim', checks.reclaimVWAP],
+        ['Breakout above previous 5-min high', checks.breakout],
+        ['Bullish momentum candle', checks.momentum],
+        ['Volume confirmation', checks.volumeConfirmed],
+        ['Not overextended', checks.notExtended],
+        ['Market direction supportive', checks.marketSupportive],
+        ['Key level break', checks.keyLevelBreak],
+        ['Relative strength', checks.relativeStrength]
+      ];
+
+      return `
+        <div class="detail-grid">
+          ${rows.map(([label, pass]) => `
+            <div class="indicator-row">
+              <span class="${pass ? 'check' : 'xmark'}">${pass ? '✓' : '✕'}</span>
+              <span>${label}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderFindOneCard(result, runnersUp = []) {
+      const card = document.createElement('div');
+      const isGood = result.label === 'FIND ME ONE';
+      card.className = `stock-card clickable ${isGood ? 'top-highlight' : ''}`;
+      const summaryId = `find-one-${result.ticker}-${Math.random().toString(36).slice(2,7)}`;
+
+      const runnerText = runnersUp.length ? `
+        <div class="rule-line">
+          Other close names: ${runnersUp.map(r => `${r.ticker} (${Math.round(r.score)}%)`).join(' · ')}
+        </div>
+      ` : '';
+
+      card.innerHTML = `
+        <div class="stock-top">
+          <div class="stock-left">
+            <span class="fire-badge">${isGood ? '🔥' : '👀'}</span>
+            <div class="ticker-wrap">
+              <div class="ticker">${result.ticker}</div>
+              <div class="subline">Find Me One Score · ${Math.round(result.score)}%</div>
+            </div>
+          </div>
+          <div class="stock-right">
+            <div class="entry-pill ${result.className}" style="margin-bottom:0;">${result.label}</div>
+            <div class="confidence">${Math.round(result.score)}%</div>
+          </div>
+        </div>
+        ${isGood ? '<div class="best-setup-label">Best Intraday Setup Right Now</div>' : ''}
+        <div class="quick-line">${result.text}</div>
+        <div class="tap-line">Tap for full Find Me One details</div>
+        <div id="${summaryId}" class="detail-panel">
+          <div class="detail-title">9-Point Intraday Checklist</div>
+          ${renderFindOneChecks(result)}
+          <div class="stats-grid">
+            <div class="stat-chip">Close: ${result.stats?.close ?? 'n/a'}</div>
+            <div class="stat-chip">VWAP: ${result.stats?.vwap ?? 'n/a'}</div>
+            <div class="stat-chip">Key Level: ${result.stats?.previousSessionHigh ?? 'n/a'}</div>
+            <div class="stat-chip">Stock Move: ${result.stats?.tickerChange ?? '0.00'}%</div>
+            <div class="stat-chip">Compare: ${result.stats?.compareSymbol ?? 'SPY'}</div>
+            <div class="stat-chip">Market Move: ${result.stats?.marketChange ?? '0.00'}%</div>
+          </div>
+          <div class="rule-line">
+            Required must-have checks: Above VWAP + Breakout + Momentum + Not Overextended. Ideal setup also includes volume, market support, and relative strength.
+          </div>
+          ${runnerText}
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        const panel = card.querySelector(`#${summaryId}`);
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+      });
+
+      return card;
     }
 
     function renderCard(item, options = {}) {
@@ -1363,6 +1575,84 @@
       }
     }
 
+    async function findMeOne() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const resultEl = document.getElementById('findOneResult');
+      const status = document.getElementById('status');
+
+      resultEl.innerHTML = '';
+
+      if (!apiKey) {
+        resultEl.innerHTML = '<div class="note-card">Paste and save your Twelve Data API key first.</div>';
+        status.textContent = 'Paste and save your Twelve Data API key first.';
+        return;
+      }
+
+      status.textContent = 'Find Me One is scanning 15 high-volume names...';
+      resultEl.innerHTML = '<div class="note-card">Scanning QQQ, SPY, IWM, NVDA, TSLA, AAPL, MSFT, META, AMD, AMZN, NFLX, COIN, JPM, GS, and SMH...</div>';
+
+      try {
+        const symbols = Array.from(new Set([...FIND_ME_ONE_LIST, 'SPY', 'QQQ']));
+        const data = await fetchIntradayBatch(symbols, apiKey);
+        const spyBars = data.SPY;
+        const qqqBars = data.QQQ;
+
+        if (!spyBars || !qqqBars) {
+          throw new Error('SPY or QQQ intraday data unavailable, so market direction cannot be checked.');
+        }
+
+        const results = [];
+        for (const ticker of FIND_ME_ONE_LIST) {
+          const bars = data[ticker];
+          if (!bars) continue;
+          results.push(analyzeFindMeOneTicker(ticker, bars, spyBars, qqqBars));
+        }
+
+        if (!results.length) {
+          resultEl.innerHTML = '<div class="note-card">No intraday data returned for the Find Me One list.</div>';
+          status.textContent = 'Find Me One could not return results.';
+          return;
+        }
+
+        const ranked = results.sort((a, b) => b.score - a.score);
+        const best = ranked[0];
+        const runnersUp = ranked.slice(1, 4);
+
+        resultEl.innerHTML = '';
+
+        if (best.score < 60 || !best.mustHave) {
+          const noTrade = {
+            ...best,
+            label: 'NO TRADE',
+            className: 'entry-no',
+            text: `No clean setup right now. ${best.ticker} is the closest name at ${Math.round(best.score)}%, but it is missing one or more must-have checks. Stay patient.`
+          };
+          resultEl.appendChild(renderFindOneCard(noTrade, runnersUp));
+          status.textContent = 'Find Me One finished: no clean setup right now.';
+        } else if (best.score >= 75 && best.mustHave) {
+          resultEl.appendChild(renderFindOneCard(best, runnersUp));
+          status.textContent = `Find Me One found ${best.ticker} as the best intraday setup.`;
+        } else {
+          const watchOnly = {
+            ...best,
+            label: 'WATCH ONLY',
+            className: 'entry-wait',
+            text: `${best.ticker} is the closest setup at ${Math.round(best.score)}%, but it is not clean enough to force. Watch it for stronger confirmation.`
+          };
+          resultEl.appendChild(renderFindOneCard(watchOnly, runnersUp));
+          status.textContent = `Find Me One found ${best.ticker} as the closest setup, but it is watch-only.`;
+        }
+
+        updateMetaInfo(formatUpdatedTime(), 'fresh intraday', {
+          label: best.checks?.marketSupportive ? 'supportive' : 'not supportive',
+          detail: `SPY VWAP ${best.checks?.spyAboveVWAP ? 'above' : 'below'} · QQQ VWAP ${best.checks?.qqqAboveVWAP ? 'above' : 'below'}`
+        });
+      } catch (err) {
+        resultEl.innerHTML = `<div class="note-card">Find Me One failed: ${err.message}</div>`;
+        status.textContent = 'Find Me One failed.';
+      }
+    }
+
     const buttons = document.querySelectorAll('button');
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1374,6 +1664,7 @@
     document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
     document.getElementById('showBtn').addEventListener('click', () => runScan(false));
     document.getElementById('checkTickerBtn').addEventListener('click', checkSingleTicker);
+    document.getElementById('findOneBtn').addEventListener('click', findMeOne);
 
     loadApiKey();
   </script>
