@@ -545,8 +545,8 @@
     </div>
 
     <div class="section-card">
-      <div class="section-title">Bonus Risky Setup</div>
-      <div id="riskyOne" class="list"></div>
+      <div class="section-title">Budget-Friendly Setup</div>
+      <div id="budgetFriendly" class="list"></div>
     </div>
 
     <div class="section-card">
@@ -596,6 +596,7 @@
     const OUTPUTSIZE = 80;
     const INTRADAY_INTERVAL = '5min';
     const INTRADAY_OUTPUTSIZE = 80;
+    const BUDGET_FRIENDLY_MAX_PRICE = 150;
 
     function getMarketDateKey() {
       const now = new Date();
@@ -800,6 +801,7 @@
     }
 
     function quickSummary(item, isRisky = false) {
+      if (item.isBudgetFriendly) return `Strongest setup under $${BUDGET_FRIENDLY_MAX_PRICE}. Lower-priced stock, but still judged by the same system.`;
       if (isRisky) return 'Early setup. Interesting, but not fully confirmed yet.';
       if (item.verdict === 'strong') return 'One of the cleaner names on the board right now.';
       if (item.verdict === 'watch') return 'Keep this on watch, but it still needs more confirmation.';
@@ -1409,7 +1411,8 @@
     }
 
     function renderCard(item, options = {}) {
-      const { isRisky = false, rank = null, topHighlight = false, intradaySignal = null } = options;
+      const { isRisky = false, rank = null, topHighlight = false, intradaySignal = null, isBudgetFriendly = false } = options;
+      if (isBudgetFriendly) item.isBudgetFriendly = true;
       const card = document.createElement('div');
       card.className = `stock-card clickable ${topHighlight ? 'top-highlight' : ''}`;
 
@@ -1420,7 +1423,11 @@
       const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
       const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
       const entry = getEntryTiming(item, isRisky);
-      const bestLabel = topHighlight ? '<div class="best-setup-label">Best Setup Right Now</div>' : '';
+      const bestLabel = topHighlight
+        ? '<div class="best-setup-label">Best Setup Right Now</div>'
+        : isBudgetFriendly
+          ? '<div class="best-setup-label">Budget-Friendly Setup</div>'
+          : '';
 
       card.innerHTML = `
         <div class="stock-top">
@@ -1437,7 +1444,7 @@
           </div>
         </div>
         ${bestLabel}
-        <div class="quick-line">${topHighlight ? '🔥 Best setup on the board right now. ' : ''}${quickSummary(item, isRisky)}</div>
+        <div class="quick-line">${topHighlight ? '🔥 Best setup on the board right now. ' : ''}${isBudgetFriendly ? '💰 Lower-cost setup. ' : ''}${quickSummary(item, isRisky)}</div>
         <div class="tap-line">Tap for full details</div>
         <div id="${summaryId}" class="detail-panel">
           <div class="detail-title">Full Breakdown</div>
@@ -1466,10 +1473,10 @@
       const apiKey = document.getElementById('apiKey').value.trim();
       const status = document.getElementById('status');
       const topFive = document.getElementById('topFive');
-      const riskyOne = document.getElementById('riskyOne');
+      const budgetFriendly = document.getElementById('budgetFriendly');
 
       topFive.innerHTML = '';
-      riskyOne.innerHTML = '';
+      budgetFriendly.innerHTML = '';
 
       if (!apiKey) {
         status.textContent = 'Paste and save your Twelve Data API key first.';
@@ -1514,10 +1521,20 @@
       try { marketTrend = await fetchMarketTrend(apiKey, forceRefresh); } catch (_) {}
 
       const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
-      const risky = [...all].sort((a, b) => b.riskyScore - a.riskyScore)[0];
+      const affordable = [...all]
+        .filter(item => {
+          const price = parseFloat(item.stats.close);
+          return Number.isFinite(price) && price <= BUDGET_FRIENDLY_MAX_PRICE && item.verdict !== 'avoid';
+        })
+        .sort((a, b) => b.score - a.score)[0];
 
       ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, { rank: idx + 1, topHighlight: idx === 0 })));
-      if (risky) riskyOne.appendChild(renderCard(risky, { isRisky: true }));
+
+      if (affordable) {
+        budgetFriendly.appendChild(renderCard(affordable, { isBudgetFriendly: true }));
+      } else {
+        budgetFriendly.innerHTML = `<div class="note-card">No budget-friendly setup under $${BUDGET_FRIENDLY_MAX_PRICE} met the criteria right now.</div>`;
+      }
 
       let dataSource = 'cached';
       if (sourcesSeen.has('fresh') && sourcesSeen.size === 1) dataSource = 'fresh';
