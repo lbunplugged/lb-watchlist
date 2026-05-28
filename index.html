@@ -6,518 +6,288 @@
   <title>LB's Watch List</title>
   <style>
     :root {
-      --bg: #050505;
-      --panel: #0d0d0f;
-      --border: rgba(212,175,55,0.18);
-      --border-soft: rgba(255,255,255,0.06);
-      --text: #f7f4ea;
-      --muted: #9f9886;
-      --gold: #d4af37;
-      --green: #38d27a;
-      --yellow: #f0c84b;
-      --red: #ff5f6d;
-      --blue: #7f9fff;
-      --shadow: 0 12px 40px rgba(0,0,0,0.45);
+      --bg:#050505; --panel:#0d0d0f; --border:rgba(212,175,55,.18);
+      --border-soft:rgba(255,255,255,.06); --text:#f7f4ea; --muted:#9f9886;
+      --gold:#d4af37; --green:#38d27a; --yellow:#f0c84b; --red:#ff5f6d;
+      --blue:#7f9fff; --shadow:0 12px 40px rgba(0,0,0,.45);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing:border-box; }
 
     body {
-      margin: 0;
-      min-height: 100vh;
+      margin:0; min-height:100vh; color:var(--text);
+      font-family:Inter, Arial, Helvetica, sans-serif;
       background:
-        radial-gradient(circle at top, rgba(212,175,55,0.05), transparent 26%),
-        linear-gradient(180deg, #090909 0%, #040404 100%);
-      color: var(--text);
-      font-family: Inter, Arial, Helvetica, sans-serif;
+        radial-gradient(circle at top, rgba(212,175,55,.05), transparent 26%),
+        linear-gradient(180deg,#090909 0%,#040404 100%);
     }
 
-    .wrap {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 24px 18px 40px;
+    .wrap { max-width:760px; margin:0 auto; padding:24px 18px 40px; }
+
+    .hero,.control-card,.section-card {
+      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+      border:1px solid var(--border-soft); border-radius:22px; padding:16px;
+      box-shadow:var(--shadow); margin-bottom:14px;
     }
 
-    .hero,
-    .control-card,
-    .section-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-      border: 1px solid var(--border-soft);
-      border-radius: 22px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-      margin-bottom: 14px;
-      transition: box-shadow 0.22s ease, border-color 0.22s ease;
-    }
-
-    .hero { border-color: var(--border); }
+    .hero { border-color:var(--border); }
 
     h1 {
-      margin: 0;
-      font-size: 44px;
-      line-height: 0.96;
-      letter-spacing: 0.02em;
-      color: #fff8e7;
+      margin:0; font-size:44px; line-height:.96; letter-spacing:.02em; color:#fff8e7;
     }
 
     .subtitle {
-      margin-top: 10px;
-      color: #d8c48b;
-      font-size: 15px;
-      line-height: 1.55;
-      max-width: 560px;
+      margin-top:10px; color:#d8c48b; font-size:15px; line-height:1.55; max-width:560px;
     }
 
-    .legend {
-      margin-top: 12px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .legend { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
 
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border-soft);
-      background: rgba(255,255,255,0.03);
-      color: #d1c39b;
-      font-size: 12px;
-      font-weight: 600;
+      display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+      border-radius:999px; border:1px solid var(--border-soft);
+      background:rgba(255,255,255,.03); color:#d1c39b; font-size:12px; font-weight:600;
     }
 
-    .control-label,
-    .section-title {
-      color: var(--gold);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 10px;
+    .control-label,.section-title {
+      color:var(--gold); font-size:12px; font-weight:800; letter-spacing:.14em;
+      text-transform:uppercase; margin-bottom:10px;
     }
 
     .workflow-line {
-      margin-top: 6px;
-      margin-bottom: 12px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(212,175,55,0.16);
-      background: rgba(212,175,55,0.05);
-      color: #e5d9b8;
-      font-size: 13px;
-      line-height: 1.45;
+      margin:6px 0 12px; padding:10px 12px; border-radius:14px;
+      border:1px solid rgba(212,175,55,.16); background:rgba(212,175,55,.05);
+      color:#e5d9b8; font-size:13px; line-height:1.45;
     }
 
-    .stack {
-      display: grid;
-      gap: 10px;
+    .stack { display:grid; gap:10px; }
+
+    input[type="password"],input[type="text"] {
+      width:100%; background:rgba(255,255,255,.025); color:var(--text);
+      border:1px solid rgba(255,255,255,.07); padding:16px; border-radius:16px;
+      font-size:15px; outline:none;
     }
 
-    input[type="password"],
-    input[type="text"] {
-      width: 100%;
-      background: rgba(255,255,255,0.025);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,0.07);
-      padding: 16px;
-      border-radius: 16px;
-      font-size: 15px;
-      outline: none;
+    input:focus {
+      border-color:rgba(212,175,55,.45);
+      box-shadow:0 0 0 3px rgba(212,175,55,.10);
     }
 
-    input[type="password"]:focus,
-    input[type="text"]:focus {
-      border-color: rgba(212,175,55,0.45);
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.10);
-    }
-
-    .button-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .button-grid.three {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
-
-    @media (max-width: 560px) {
-      .button-grid.three {
-        grid-template-columns: 1fr;
-      }
-    }
+    .button-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .button-grid.three { grid-template-columns:1fr 1fr 1fr; }
 
     button {
-      width: 100%;
-      background: linear-gradient(180deg, #141416, #0d0d10);
-      color: #fff9eb;
-      border: 1px solid rgba(212,175,55,0.22);
-      padding: 15px 14px;
-      cursor: pointer;
-      border-radius: 16px;
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-      transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+      width:100%; background:linear-gradient(180deg,#141416,#0d0d10); color:#fff9eb;
+      border:1px solid rgba(212,175,55,.22); padding:15px 14px; cursor:pointer;
+      border-radius:16px; font-size:15px; font-weight:800; letter-spacing:.04em;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      transition:background .18s ease, box-shadow .18s ease, border-color .18s ease, transform .12s ease;
     }
 
-    button:hover { background: linear-gradient(180deg, #18181c, #111116); }
+    button:hover { background:linear-gradient(180deg,#18181c,#111116); }
 
-    button.button-active,
-    button:active {
-      background: linear-gradient(180deg, rgba(212,175,55,0.30), rgba(212,175,55,0.10));
-      border-color: rgba(212,175,55,0.50);
-      box-shadow: 0 0 0 1px rgba(212,175,55,0.10), 0 0 24px rgba(212,175,55,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
-      transform: translateY(1px);
+    button.button-active,button:active {
+      background:linear-gradient(180deg,rgba(212,175,55,.30),rgba(212,175,55,.10));
+      border-color:rgba(212,175,55,.50);
+      box-shadow:0 0 0 1px rgba(212,175,55,.10),0 0 24px rgba(212,175,55,.18),inset 0 1px 0 rgba(255,255,255,.08);
+      transform:translateY(1px);
     }
 
     .find-btn {
-      border-color: rgba(56,210,122,0.38);
-      background: linear-gradient(180deg, rgba(56,210,122,0.18), rgba(13,13,16,0.96));
+      border-color:rgba(56,210,122,.38);
+      background:linear-gradient(180deg,rgba(56,210,122,.18),rgba(13,13,16,.96));
     }
 
     .status-box {
-      margin-top: 10px;
-      padding: 14px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
+      margin-top:10px; padding:14px; border-radius:16px; background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.05);
     }
 
-    .status {
-      color: #e6dcc0;
-      font-size: 14px;
-      line-height: 1.5;
-      min-height: 20px;
+    .status { color:#e6dcc0; font-size:14px; line-height:1.5; min-height:20px; }
+    .meta { margin-top:6px; color:var(--muted); font-size:12px; line-height:1.5; }
+
+    .tabs {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;
+      position:sticky; top:0; z-index:5; padding:8px 0;
+      background:linear-gradient(180deg,#070707 0%,rgba(7,7,7,.88) 100%);
+      backdrop-filter:blur(10px);
     }
 
-    .meta {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
+    .tab-btn {
+      padding:12px 8px; border-radius:14px; font-size:12px; min-height:46px;
     }
 
-    .list { display: grid; gap: 10px; }
+    .tab-btn.active-tab {
+      background:linear-gradient(180deg,rgba(212,175,55,.30),rgba(212,175,55,.09));
+      border-color:rgba(212,175,55,.55);
+      box-shadow:0 0 22px rgba(212,175,55,.12);
+    }
+
+    .tab-panel { display:none; }
+    .tab-panel.active-panel { display:block; }
+
+    .list { display:grid; gap:10px; }
 
     .stock-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 18px;
-      padding: 14px;
-      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+      border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:14px;
+      transition:border-color .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease;
     }
 
-    .stock-card.clickable { cursor: pointer; }
-
+    .stock-card.clickable { cursor:pointer; }
     .stock-card.clickable:hover {
-      border-color: rgba(212,175,55,0.24);
-      transform: translateY(-1px);
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border-color:rgba(212,175,55,.24); transform:translateY(-1px);
+      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
     }
 
     .stock-card.top-highlight {
-      border-color: rgba(56,210,122,0.42);
-      background: linear-gradient(180deg, rgba(56,210,122,0.10), rgba(255,255,255,0.02));
-      box-shadow:
-        0 0 0 1px rgba(56,210,122,0.10),
-        0 0 26px rgba(56,210,122,0.16),
-        0 16px 36px rgba(0,0,0,0.42);
+      border-color:rgba(56,210,122,.42);
+      background:linear-gradient(180deg,rgba(56,210,122,.10),rgba(255,255,255,.02));
+      box-shadow:0 0 0 1px rgba(56,210,122,.10),0 0 26px rgba(56,210,122,.16),0 16px 36px rgba(0,0,0,.42);
     }
 
     .best-setup-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 10px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #dfffe9;
-      background: rgba(56,210,122,0.12);
-      border: 1px solid rgba(56,210,122,0.24);
+      display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 10px;
+      border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.08em;
+      text-transform:uppercase; color:#dfffe9; background:rgba(56,210,122,.12);
+      border:1px solid rgba(56,210,122,.24);
     }
 
-    .stock-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .stock-left {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .stock-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .stock-left { min-width:0; display:flex; align-items:center; gap:10px; }
 
     .rank-badge {
-      min-width: 34px;
-      height: 34px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(212,175,55,0.12);
-      border: 1px solid rgba(212,175,55,0.28);
-      color: var(--gold);
-      font-size: 12px;
-      font-weight: 800;
+      min-width:34px; height:34px; border-radius:12px; display:inline-flex;
+      align-items:center; justify-content:center; background:rgba(212,175,55,.12);
+      border:1px solid rgba(212,175,55,.28); color:var(--gold); font-size:12px; font-weight:800;
     }
 
-    .fire-badge {
-      color: #7ff0a8;
-      font-size: 18px;
-    }
-
-    .ticker-wrap { min-width: 0; }
+    .fire-badge { color:#7ff0a8; font-size:18px; }
+    .ticker-wrap { min-width:0; }
 
     .ticker {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      color: #fff9ec;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size:24px; font-weight:900; letter-spacing:.02em; color:#fff9ec;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
-    .subline {
-      margin-top: 3px;
-      font-size: 12px;
-      color: var(--muted);
+    .subline { margin-top:3px; font-size:12px; color:var(--muted); }
+
+    .stock-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+    .verdict,.entry-pill {
+      padding:8px 10px; border-radius:999px; font-size:12px; font-weight:800;
+      letter-spacing:.02em; border:1px solid transparent; white-space:nowrap;
     }
 
-    .stock-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
+    .verdict-strong,.entry-good {
+      color:#dfffe9; background:rgba(56,210,122,.13); border-color:rgba(56,210,122,.28);
     }
 
-    .verdict {
-      padding: 8px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      border: 1px solid transparent;
-      white-space: nowrap;
+    .verdict-watch,.entry-wait {
+      color:#fff8da; background:rgba(240,200,75,.12); border-color:rgba(240,200,75,.28);
     }
 
-    .verdict-strong {
-      color: #dfffe9;
-      background: rgba(56,210,122,0.13);
-      border-color: rgba(56,210,122,0.28);
-    }
-
-    .verdict-watch {
-      color: #fff8da;
-      background: rgba(240,200,75,0.12);
-      border-color: rgba(240,200,75,0.28);
-    }
-
-    .verdict-avoid {
-      color: #ffe4e7;
-      background: rgba(255,95,109,0.12);
-      border-color: rgba(255,95,109,0.26);
+    .verdict-avoid,.entry-no {
+      color:#ffe4e7; background:rgba(255,95,109,.12); border-color:rgba(255,95,109,.26);
     }
 
     .confidence {
-      min-width: 54px;
-      text-align: center;
-      padding: 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      color: #f8f1da;
-      border: 1px solid rgba(212,175,55,0.22);
-      background: rgba(212,175,55,0.08);
+      min-width:54px; text-align:center; padding:8px; border-radius:999px; font-size:12px;
+      font-weight:900; color:#f8f1da; border:1px solid rgba(212,175,55,.22);
+      background:rgba(212,175,55,.08);
     }
 
-    .quick-line {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #ded7c2;
-      line-height: 1.45;
-    }
-
-    .tap-line {
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--blue);
-      letter-spacing: 0.02em;
-    }
+    .quick-line { margin-top:10px; font-size:13px; color:#ded7c2; line-height:1.45; }
+    .tap-line { margin-top:8px; font-size:11px; color:var(--blue); letter-spacing:.02em; }
 
     .detail-panel {
-      display: none;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255,255,255,0.06);
+      display:none; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.06);
     }
 
     .detail-title {
-      font-size: 13px;
-      color: var(--gold);
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
+      font-size:13px; color:var(--gold); font-weight:800; letter-spacing:.08em;
+      text-transform:uppercase; margin-bottom:8px;
     }
 
-    .detail-text {
-      font-size: 14px;
-      line-height: 1.58;
-      color: #ece5d2;
-    }
+    .detail-text { font-size:14px; line-height:1.58; color:#ece5d2; }
+    .detail-grid { display:grid; gap:8px; margin-top:12px; }
 
-    .detail-grid {
-      display: grid;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .indicator-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: #e7e1cf;
-    }
-
-    .check,
-    .xmark {
-      font-weight: 900;
-      font-size: 17px;
-      width: 18px;
-      text-align: center;
-    }
-
-    .check { color: var(--green); }
-    .xmark { color: var(--red); }
+    .indicator-row { display:flex; align-items:center; gap:8px; font-size:14px; color:#e7e1cf; }
+    .check,.xmark { font-weight:900; font-size:17px; width:18px; text-align:center; }
+    .check { color:var(--green); }
+    .xmark { color:var(--red); }
 
     .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px;
+      display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;
     }
 
     .stat-chip {
-      padding: 10px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.025);
-      border: 1px solid rgba(255,255,255,0.05);
-      font-size: 12px;
-      color: #d5ccb2;
+      padding:10px; border-radius:14px; background:rgba(255,255,255,.025);
+      border:1px solid rgba(255,255,255,.05); font-size:12px; color:#d5ccb2;
     }
 
     .entry-box {
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
+      margin-top:12px; padding:12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.02);
     }
 
     .entry-title {
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-      color: var(--gold);
-    }
-
-    .entry-pill {
-      display: inline-block;
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    .entry-good {
-      color: #dfffe9;
-      background: rgba(56,210,122,0.13);
-      border: 1px solid rgba(56,210,122,0.28);
-    }
-
-    .entry-wait {
-      color: #fff8da;
-      background: rgba(240,200,75,0.12);
-      border: 1px solid rgba(240,200,75,0.28);
-    }
-
-    .entry-no {
-      color: #ffe4e7;
-      background: rgba(255,95,109,0.12);
-      border: 1px solid rgba(255,95,109,0.26);
+      font-size:12px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+      margin-bottom:6px; color:var(--gold);
     }
 
     .rule-line {
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #d9cfb1;
-      border: 1px solid rgba(255,255,255,0.05);
-      background: rgba(255,255,255,0.02);
+      margin-top:10px; padding:10px 12px; border-radius:14px; font-size:12px;
+      line-height:1.5; color:#d9cfb1; border:1px solid rgba(255,255,255,.05);
+      background:rgba(255,255,255,.02);
     }
 
     .note-card {
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
-      color: #d4cab0;
-      font-size: 14px;
-      line-height: 1.55;
+      padding:14px; border-radius:18px; background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.05); color:#d4cab0; font-size:14px; line-height:1.55;
     }
 
     .footer {
-      margin-top: 16px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.65;
-      padding: 4px 2px 0;
+      margin-top:16px; color:var(--muted); font-size:12px; line-height:1.65; padding:4px 2px 0;
+    }
+
+    @media (max-width:560px) {
+      .button-grid.three { grid-template-columns:1fr; }
+      .tabs { grid-template-columns:1fr; position:static; }
+      .stock-top { align-items:flex-start; }
+      .stock-right { flex-direction:column; align-items:flex-end; }
+      h1 { font-size:38px; }
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>LB’s Watch List</h1>
-      <div class="subtitle">Welcome to your luxury scanner. Built for clarity, precision, and real setups — not noise.</div>
+      <h1>LB's Watch List</h1>
+      <div class="subtitle">Welcome to your luxury scanner. Built for clarity, precision, and real setups - not noise.</div>
       <div class="legend">
-        <div class="pill">🟢 Strong Setup</div>
-        <div class="pill">🟡 Watch</div>
-        <div class="pill">🔴 Avoid</div>
+        <div class="pill">Strong Setup</div>
+        <div class="pill">Watch</div>
+        <div class="pill">Avoid</div>
       </div>
     </div>
 
     <div class="control-card">
       <div class="control-label">Access</div>
       <div class="workflow-line">
-        Step 1: Scan Market → Step 2: Pick a ticker → Step 3: Check entry timing → Or use Find Me One for a live intraday opportunity search.
+        Scan Market, Find Me One, and Check Ticker now open their own tabs automatically so the page stays clean.
       </div>
+
       <div class="stack">
         <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key" />
+
         <div class="button-grid three">
           <button id="saveKeyBtn">Save Key</button>
           <button id="showBtn">Scan Market</button>
           <button id="findOneBtn" class="find-btn">Find Me One</button>
         </div>
       </div>
+
       <div class="status-box">
         <div class="status" id="status">Ready. Save your API key, then scan the market.</div>
         <div class="meta" id="metaInfo">Last updated: -- · Data source: -- · Market trend: --</div>
@@ -532,30 +302,48 @@
       </div>
     </div>
 
-    <div class="section-card">
-      <div class="section-title">Find Me One Result</div>
-      <div id="findOneResult" class="list">
-        <div class="note-card">Click Find Me One to scan 15 high-volume names for the cleanest intraday setup right now.</div>
+    <div class="tabs">
+      <button class="tab-btn active-tab" data-tab="topTab">Top Setups</button>
+      <button class="tab-btn" data-tab="findTab">Find Me One</button>
+      <button class="tab-btn" data-tab="tickerTab">Check Ticker</button>
+    </div>
+
+    <div id="topTab" class="tab-panel active-panel">
+      <div class="section-card">
+        <div class="section-title">Top 5 Ranked Setups</div>
+        <div id="topFive" class="list">
+          <div class="note-card">Click Scan Market to rank your top daily setups.</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Budget-Friendly Setup</div>
+        <div id="budgetFriendly" class="list">
+          <div class="note-card">Your best lower-priced setup will appear here after the market scan.</div>
+        </div>
       </div>
     </div>
 
-    <div class="section-card">
-      <div class="section-title">Top 5 Ranked Setups</div>
-      <div id="topFive" class="list"></div>
+    <div id="findTab" class="tab-panel">
+      <div class="section-card">
+        <div class="section-title">Find Me One Result</div>
+        <div id="findOneResult" class="list">
+          <div class="note-card">Click Find Me One to scan 15 high-volume names for the cleanest intraday setup right now.</div>
+        </div>
+      </div>
     </div>
 
-    <div class="section-card">
-      <div class="section-title">Budget-Friendly Setup</div>
-      <div id="budgetFriendly" class="list"></div>
-    </div>
-
-    <div class="section-card">
-      <div class="section-title">Execution Check</div>
-      <div id="singleTickerResult"></div>
+    <div id="tickerTab" class="tab-panel">
+      <div class="section-card">
+        <div class="section-title">Execution Check</div>
+        <div id="singleTickerResult">
+          <div class="note-card">Enter a ticker above, then click Check Ticker.</div>
+        </div>
+      </div>
     </div>
 
     <div class="footer">
-      Scan the market to find your strongest daily setups. Use Find Me One when you want the system to search high-volume names for the cleanest intraday opportunity right now.
+      Tabs keep each result area separate so you can move between your market scan, Find Me One, and ticker checks without scrolling through everything.
     </div>
   </div>
 
@@ -583,14 +371,12 @@
     ];
 
     const FIND_ME_ONE_LIST = [
-      'QQQ','SPY','IWM',
-      'NVDA','TSLA','AAPL','MSFT','META',
-      'AMD','AMZN','NFLX','COIN',
-      'JPM','GS','SMH'
+      'QQQ','SPY','IWM','NVDA','TSLA','AAPL','MSFT','META',
+      'AMD','AMZN','NFLX','COIN','JPM','GS','SMH'
     ];
 
     const API_ROOT = 'https://api.twelvedata.com/time_series';
-    const CACHE_PREFIX = 'lb-watchlist-clean-v5';
+    const CACHE_PREFIX = 'lb-watchlist-clean-v6-tabs';
     const BATCH_SIZE = 25;
     const BATCH_DELAY_MS = 30000;
     const OUTPUTSIZE = 80;
@@ -598,11 +384,23 @@
     const INTRADAY_OUTPUTSIZE = 80;
     const BUDGET_FRIENDLY_MAX_PRICE = 150;
 
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active-tab', btn.dataset.tab === tabId);
+      });
+
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active-panel', panel.id === tabId);
+      });
+
+      document.querySelector('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function getMarketDateKey() {
       const now = new Date();
       const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false
+        timeZone:'America/New_York',
+        year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', hour12:false
       });
       const parts = formatter.formatToParts(now);
       const date = `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}-${parts.find(p => p.type === 'day').value}`;
@@ -620,6 +418,7 @@
         alert('Paste your Twelve Data API key first.');
         return;
       }
+
       localStorage.setItem('lb_twelve_data_key', key);
       document.getElementById('status').textContent = 'API key saved in this browser.';
     }
@@ -637,21 +436,29 @@
       const out = [];
       let prev = values[0];
       out.push(prev);
+
       for (let i = 1; i < values.length; i++) {
         prev = values[i] * k + prev * (1 - k);
         out.push(prev);
       }
+
       return out;
     }
 
     function sma(values, period) {
       const out = [];
+
       for (let i = 0; i < values.length; i++) {
-        if (i < period - 1) { out.push(null); continue; }
+        if (i < period - 1) {
+          out.push(null);
+          continue;
+        }
+
         let sum = 0;
         for (let j = i - period + 1; j <= i; j++) sum += values[j];
         out.push(sum / period);
       }
+
       return out;
     }
 
@@ -669,11 +476,13 @@
 
       let gains = 0;
       let losses = 0;
+
       for (let i = 1; i <= period; i++) {
         const diff = values[i] - values[i - 1];
         if (diff >= 0) gains += diff;
         else losses -= diff;
       }
+
       let avgGain = gains / period;
       let avgLoss = losses / period;
       out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
@@ -686,45 +495,47 @@
         avgLoss = (avgLoss * (period - 1) + loss) / period;
         out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
       }
+
       return out;
     }
 
     function calculateVWAP(bars) {
       let cumulativePV = 0;
       let cumulativeVolume = 0;
-      const out = [];
 
-      for (const bar of bars) {
+      return bars.map(bar => {
         const typicalPrice = (bar.high + bar.low + bar.close) / 3;
         cumulativePV += typicalPrice * bar.volume;
         cumulativeVolume += bar.volume;
-        out.push(cumulativeVolume ? cumulativePV / cumulativeVolume : typicalPrice);
-      }
-
-      return out;
+        return cumulativeVolume ? cumulativePV / cumulativeVolume : typicalPrice;
+      });
     }
 
     function streakLabel(closes) {
       if (closes.length < 2) return 'No streak';
+
       const direction = closes.at(-1) >= closes.at(-2) ? 'positive' : 'negative';
       let count = 1;
+
       for (let i = closes.length - 1; i > 0; i--) {
         const diff = closes[i] - closes[i - 1];
+
         if (direction === 'positive' && diff >= 0) count++;
         else if (direction === 'negative' && diff < 0) count++;
         else break;
       }
+
       return `${count - 1} day${count - 1 === 1 ? '' : 's'} ${direction}`;
     }
 
     function normalizeSeries(valuesAsc) {
       return valuesAsc.map(v => ({
-        open: Number(v.open),
-        high: Number(v.high),
-        low: Number(v.low),
-        close: Number(v.close),
-        volume: Number(v.volume || 0),
-        datetime: v.datetime
+        open:Number(v.open),
+        high:Number(v.high),
+        low:Number(v.low),
+        close:Number(v.close),
+        volume:Number(v.volume || 0),
+        datetime:v.datetime
       })).filter(v => Number.isFinite(v.close));
     }
 
@@ -780,23 +591,23 @@
         ticker,
         score,
         riskyScore,
-        verdict: getVerdictFromScore(score),
-        confidence: getConfidence(score),
-        streak: streakLabel(closes),
-        lastDate: bars[i].datetime,
-        stats: {
-          close: closes[i].toFixed(2),
-          prevClose: closes[prev]?.toFixed(2) || closes[i].toFixed(2),
-          ema5: ema5[i].toFixed(2),
-          ema20: ema20[i].toFixed(2),
-          macd: macdLine[i].toFixed(3),
-          prevMacd: macdLine[prev]?.toFixed(3) || macdLine[i].toFixed(3),
-          signal: signalLine[i].toFixed(3),
-          rsi: rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
-          volume: volumes[i],
-          volAvg: vol20[i] ? Math.round(vol20[i]) : null
+        verdict:getVerdictFromScore(score),
+        confidence:getConfidence(score),
+        streak:streakLabel(closes),
+        lastDate:bars[i].datetime,
+        stats:{
+          close:closes[i].toFixed(2),
+          prevClose:closes[prev]?.toFixed(2) || closes[i].toFixed(2),
+          ema5:ema5[i].toFixed(2),
+          ema20:ema20[i].toFixed(2),
+          macd:macdLine[i].toFixed(3),
+          prevMacd:macdLine[prev]?.toFixed(3) || macdLine[i].toFixed(3),
+          signal:signalLine[i].toFixed(3),
+          rsi:rsi14[i] ? rsi14[i].toFixed(1) : 'n/a',
+          volume:volumes[i],
+          volAvg:vol20[i] ? Math.round(vol20[i]) : null
         },
-        checks: { priceAbove20, emaBullish, macdBullish, rsiBullish, volumeBullish, belowZeroBullish }
+        checks:{ priceAbove20, emaBullish, macdBullish, rsiBullish, volumeBullish, belowZeroBullish }
       };
     }
 
@@ -812,46 +623,36 @@
       const parts = [];
 
       if (isRisky) {
-        parts.push(`${item.ticker} is the risky setup because momentum is trying to turn before full confirmation arrives. This makes it earlier and more aggressive than your main top-ranked names.`);
+        parts.push(`${item.ticker} is the risky setup because momentum is trying to turn before full confirmation arrives.`);
       } else if (item.verdict === 'strong') {
-        parts.push(`${item.ticker}${rank ? ` ranked #${rank}` : ''} because several of your main signals are aligned, which makes it one of the stronger names on your board right now.`);
+        parts.push(`${item.ticker}${rank ? ` ranked #${rank}` : ''} because several of your main signals are aligned.`);
       } else if (item.verdict === 'watch') {
-        parts.push(`${item.ticker} has enough working to stay on your radar, but it does not have full alignment yet, so this is more of a patience setup than a conviction setup.`);
+        parts.push(`${item.ticker} has enough working to stay on your radar, but it does not have full alignment yet.`);
       } else {
-        parts.push(`${item.ticker} does not fit your current call strategy right now. Too many pieces are missing, so this is an avoid name unless the chart improves.`);
+        parts.push(`${item.ticker} does not fit your current call strategy right now.`);
       }
 
-      parts.push(item.checks.priceAbove20 ? `Price is above the 20 EMA, which tells you the broader short-term trend is still supportive.` : `Price is below the 20 EMA, which tells you the broader short-term trend is not supporting the setup right now.`);
-      parts.push(item.checks.emaBullish ? `The 5 EMA is bullish versus the 20 EMA, showing recent price action has more strength than the broader average.` : `The 5 EMA is not giving you a bullish crossover advantage, so short-term strength is not clearly leading.`);
-      parts.push(item.checks.macdBullish ? `MACD is bullish, which suggests momentum is still leaning upward rather than fading.` : `MACD is not bullish, so momentum is not giving you strong confirmation yet.`);
-      parts.push(item.checks.rsiBullish ? `RSI is in a healthy zone at ${item.stats.rsi}, which suggests strength without looking too stretched.` : `RSI is at ${item.stats.rsi}, which is outside your preferred zone and weakens the setup quality.`);
-      parts.push(item.checks.volumeBullish ? `Volume is supporting the move, which adds participation and confirmation.` : `Volume is not confirming the move, so participation is the main weak spot here.`);
-
-      if (item.verdict === 'strong' && !item.checks.volumeBullish) {
-        parts.push(`That means the setup is strong, but not perfect. You have trend and momentum, but not full participation confirmation.`);
-      }
+      parts.push(item.checks.priceAbove20 ? 'Price is above the 20 EMA.' : 'Price is below the 20 EMA.');
+      parts.push(item.checks.emaBullish ? 'The 5 EMA is bullish versus the 20 EMA.' : 'The 5 EMA is not giving a bullish advantage.');
+      parts.push(item.checks.macdBullish ? 'MACD is bullish.' : 'MACD is not bullish.');
+      parts.push(item.checks.rsiBullish ? `RSI is in a healthy zone at ${item.stats.rsi}.` : `RSI is at ${item.stats.rsi}, outside your preferred zone.`);
+      parts.push(item.checks.volumeBullish ? 'Volume supports the move.' : 'Volume is not confirming the move.');
 
       return parts.join(' ');
     }
 
     function buildTradeIdea(item, isRisky = false, intradaySignal = null) {
       if (intradaySignal?.label === 'ENTER NOW') {
-        if (item.verdict !== 'strong') {
-          return 'Intraday may look active, but the daily setup is not strong enough to justify the trade. Let the daily chart stay in control.';
-        }
-        return 'Daily setup is strong and intraday confirms buyers are in control right now. This is the kind of moment where a short-term call entry makes sense.';
-      }
-      if (intradaySignal?.label === 'WAIT') {
-        return 'Daily setup may still be solid, but intraday says do not force it yet. Let price confirm more cleanly before stepping into calls.';
-      }
-      if (intradaySignal?.label === 'STAY OUT') {
-        return 'Daily setup may exist, but intraday is not giving you a quality call entry right now. Better to protect capital and move on.';
+        if (item.verdict !== 'strong') return 'Intraday may look active, but the daily setup is not strong enough.';
+        return 'Daily setup is strong and intraday confirms buyers are in control right now.';
       }
 
-      if (isRisky) return 'Treat this like an early reversal idea. Let price prove itself before taking a call.';
+      if (intradaySignal?.label === 'WAIT') return 'Daily setup may still be solid, but intraday says do not force it yet.';
+      if (intradaySignal?.label === 'STAY OUT') return 'Intraday is not giving you a quality call entry right now.';
+      if (isRisky) return 'Treat this like an early reversal idea. Let price prove itself first.';
       if (item.verdict === 'strong' && item.checks.volumeBullish) return 'Strong setup. Watch for continuation or a clean pullback entry.';
-      if (item.verdict === 'strong' && !item.checks.volumeBullish) return 'Strong setup, but volume is light. Watch for better participation before getting aggressive.';
-      if (item.verdict === 'watch') return 'Needs more confirmation. Keep it on watch, but do not force an entry.';
+      if (item.verdict === 'strong') return 'Strong setup, but volume is light. Wait for better participation.';
+      if (item.verdict === 'watch') return 'Needs more confirmation. Keep it on watch.';
       return 'Stay patient and avoid forcing a trade here.';
     }
 
@@ -866,19 +667,11 @@
       const extendedPct = ema5Value > 0 ? ((priceNow - ema5Value) / ema5Value) * 100 : 0;
 
       if (isRisky) {
-        return {
-          label: 'WAIT',
-          className: 'entry-wait',
-          text: 'Interesting early reversal, but this is not the cleanest trigger point. Let price prove itself and avoid forcing the entry.'
-        };
+        return { label:'WAIT', className:'entry-wait', text:'Interesting early reversal, but this is not the cleanest trigger point.' };
       }
 
       if (item.verdict === 'avoid') {
-        return {
-          label: 'STAY OUT',
-          className: 'entry-no',
-          text: 'The setup itself is not good enough right now, so this is not a valid entry window for your strategy.'
-        };
+        return { label:'STAY OUT', className:'entry-no', text:'The setup itself is not good enough right now.' };
       }
 
       const trendConfirmed = item.checks.priceAbove20 && item.checks.emaBullish;
@@ -889,26 +682,14 @@
       const above20 = priceNow > ema20Value;
 
       if (trendConfirmed && momentumConfirmed && healthyRsi && pricePushing && notTooExtended && above20) {
-        return {
-          label: 'ENTER WINDOW',
-          className: 'entry-good',
-          text: 'This is a solid moment to consider entry. Trend is confirmed, momentum is active, RSI is still in a healthy zone, and price is not too stretched.'
-        };
+        return { label:'ENTER WINDOW', className:'entry-good', text:'This is a solid moment to consider entry. Trend, momentum, RSI, and price behavior are aligned.' };
       }
 
       if (trendConfirmed && momentumConfirmed) {
-        return {
-          label: 'WAIT',
-          className: 'entry-wait',
-          text: 'Good setup, but not the best window to enter. Price looks a little extended or the push is not clean enough yet, so patience may give you a better spot.'
-        };
+        return { label:'WAIT', className:'entry-wait', text:'Good setup, but not the best window to enter yet.' };
       }
 
-      return {
-        label: 'STAY OUT',
-        className: 'entry-no',
-        text: 'The setup may be on watch, but this is not a clean entry trigger right now because momentum and price behavior are not aligned enough.'
-      };
+      return { label:'STAY OUT', className:'entry-no', text:'This is not a clean entry trigger right now.' };
     }
 
     function getLatestSessionBars(bars) {
@@ -927,51 +708,37 @@
     function getPreviousHigh(sessionBars, currentIndex) {
       if (!sessionBars || currentIndex <= 0) return null;
       let high = -Infinity;
+
       for (let i = 0; i < currentIndex; i++) {
         if (sessionBars[i].high > high) high = sessionBars[i].high;
       }
+
       return Number.isFinite(high) ? high : null;
     }
 
     function analyzeIntradayEntry(bars) {
       if (!bars || bars.length < 25) {
-        return {
-          label: 'WAIT',
-          className: 'entry-wait',
-          text: 'Not enough intraday data yet to make a clean entry decision.',
-          stats: null
-        };
+        return { label:'WAIT', className:'entry-wait', text:'Not enough intraday data yet to make a clean entry decision.', stats:null };
       }
 
       const sessionBars = getLatestSessionBars(bars);
+
       if (sessionBars.length < 12) {
-        return {
-          label: 'WAIT',
-          className: 'entry-wait',
-          text: 'Need more bars from the current session before confirming an entry.',
-          stats: null
-        };
+        return { label:'WAIT', className:'entry-wait', text:'Need more bars from the current session before confirming an entry.', stats:null };
       }
 
       const closes = sessionBars.map(b => b.close);
       const opens = sessionBars.map(b => b.open);
       const highs = sessionBars.map(b => b.high);
       const volumes = sessionBars.map(b => b.volume);
-
       const ema5Series = ema(closes, 5);
       const volAvg8 = sma(volumes, 8);
       const vwapSeries = calculateVWAP(sessionBars);
-
       const i = closes.length - 1;
       const prev = i - 1;
 
       if (prev < 2) {
-        return {
-          label: 'WAIT',
-          className: 'entry-wait',
-          text: 'Not enough price structure yet for an intraday signal.',
-          stats: null
-        };
+        return { label:'WAIT', className:'entry-wait', text:'Not enough price structure yet for an intraday signal.', stats:null };
       }
 
       const currentClose = closes[i];
@@ -988,7 +755,7 @@
       const reclaimVWAP = closes[prev] <= prevVWAP && currentClose > currentVWAP;
       const breakout = currentClose > prevHigh;
       const bullishCandle = currentClose > currentOpen;
-      const candleStrength = currentHigh > highs[prev] && (currentClose - currentOpen) > 0;
+      const candleStrength = currentHigh > highs[prev] && currentClose - currentOpen > 0;
       const momentum = bullishCandle && candleStrength;
       const volumeConfirmed = avgVolume > 0 && currentVolume > avgVolume;
       const extendedPct = currentEMA5 ? ((currentClose - currentEMA5) / currentEMA5) * 100 : 0;
@@ -1002,45 +769,34 @@
       if (strongBullishContext && breakout && momentum && volumeConfirmed && notExtended) {
         label = 'ENTER NOW';
         className = 'entry-good';
-        text = 'Price is above VWAP, breaking recent intraday highs with momentum and volume, and it is not overly stretched. This is the kind of entry window you want for short-term calls.';
+        text = 'Price is above VWAP, breaking recent highs with momentum and volume, and it is not overly stretched.';
       } else if (!strongBullishContext && !breakout) {
         label = 'STAY OUT';
         className = 'entry-no';
-        text = 'Price is not in bullish control intraday yet. It is below VWAP and has not proven strength with a breakout.';
+        text = 'Price is not in bullish control intraday yet.';
       } else if (strongBullishContext && breakout && !volumeConfirmed) {
-        label = 'WAIT';
-        className = 'entry-wait';
-        text = 'The breakout is there, but volume is not confirming strongly yet. Let it prove itself before you chase it.';
+        text = 'The breakout is there, but volume is not confirming strongly yet.';
       } else if (strongBullishContext && breakout && momentum && !notExtended) {
-        label = 'WAIT';
-        className = 'entry-wait';
-        text = 'The setup looks strong, but price is extended above the 5 EMA right now. Better to wait for a cleaner pullback or brief reset.';
+        text = 'The setup looks strong, but price is extended above the 5 EMA right now.';
       } else if (!aboveVWAP && !reclaimVWAP) {
         label = 'STAY OUT';
         className = 'entry-no';
-        text = 'VWAP is not supporting the trade right now. For calls, you want buyers clearly controlling the session.';
+        text = 'VWAP is not supporting the trade right now.';
       }
 
       return {
         label,
         className,
         text,
-        stats: {
-          close: currentClose.toFixed(2),
-          vwap: currentVWAP.toFixed(2),
-          ema5: currentEMA5 ? currentEMA5.toFixed(2) : 'n/a',
-          prevHigh: prevHigh.toFixed(2),
-          volume: currentVolume,
-          avgVolume: avgVolume ? Math.round(avgVolume) : null,
-          extendedPct: extendedPct.toFixed(2),
-          checks: {
-            aboveVWAP,
-            reclaimVWAP,
-            breakout,
-            momentum,
-            volumeConfirmed,
-            notExtended
-          }
+        stats:{
+          close:currentClose.toFixed(2),
+          vwap:currentVWAP.toFixed(2),
+          ema5:currentEMA5 ? currentEMA5.toFixed(2) : 'n/a',
+          prevHigh:prevHigh.toFixed(2),
+          volume:currentVolume,
+          avgVolume:avgVolume ? Math.round(avgVolume) : null,
+          extendedPct:extendedPct.toFixed(2),
+          checks:{ aboveVWAP, reclaimVWAP, breakout, momentum, volumeConfirmed, notExtended }
         }
       };
     }
@@ -1056,14 +812,8 @@
 
       if (!sessionBars || sessionBars.length < 12 || !signal.stats) {
         return {
-          ticker,
-          score: 0,
-          label: 'WAIT',
-          className: 'entry-wait',
-          text: signal.text || 'Not enough current session bars.',
-          signal,
-          checks: null,
-          sessionBars
+          ticker, score:0, label:'WAIT', className:'entry-wait',
+          text:signal.text || 'Not enough current session bars.', signal, checks:null, sessionBars
         };
       }
 
@@ -1072,7 +822,6 @@
       const vwapSeries = calculateVWAP(sessionBars);
       const previousSessionHigh = getPreviousHigh(sessionBars, i);
       const currentClose = closes[i];
-
       const tickerChange = percentChangeFromOpen(sessionBars);
 
       const spySession = getLatestSessionBars(spyBars || []);
@@ -1091,12 +840,10 @@
 
       const strongMarketSupport = spyAboveVWAP && qqqAboveVWAP;
       const keyLevelBreak = previousSessionHigh !== null && currentClose > previousSessionHigh;
-
       const compareSymbol = getMarketCompareSymbol(ticker);
       const compareSession = compareSymbol === 'QQQ' ? qqqSession : spySession;
       const marketChange = percentChangeFromOpen(compareSession);
       const relativeStrength = ticker === compareSymbol ? true : tickerChange > marketChange;
-
       const c = signal.stats.checks;
 
       let score = 0;
@@ -1120,11 +867,11 @@
       if (score >= 75 && mustHave) {
         label = 'FIND ME ONE';
         className = 'entry-good';
-        text = `${ticker} is the best setup right now. Buyers are in control, price is above VWAP, breaking highs, showing momentum, and the broader market/relative strength checks support the move.`;
+        text = `${ticker} is the best setup right now. Buyers are in control, price is above VWAP, breaking highs, showing momentum, and the broader market checks support the move.`;
       } else if (score >= 60) {
         label = 'WATCH ONLY';
         className = 'entry-wait';
-        text = `${ticker} is the closest setup, but it is not fully clean yet. Wait for stronger confirmation before forcing an entry.`;
+        text = `${ticker} is the closest setup, but it is not fully clean yet.`;
       }
 
       return {
@@ -1136,22 +883,14 @@
         signal,
         mustHave,
         idealSetup,
-        checks: {
-          ...c,
-          marketSupportive,
-          strongMarketSupport,
-          keyLevelBreak,
-          relativeStrength,
-          spyAboveVWAP,
-          qqqAboveVWAP
-        },
-        stats: {
-          close: currentClose.toFixed(2),
-          vwap: vwapSeries[i].toFixed(2),
-          previousSessionHigh: previousSessionHigh ? previousSessionHigh.toFixed(2) : 'n/a',
-          tickerChange: tickerChange.toFixed(2),
+        checks:{ ...c, marketSupportive, strongMarketSupport, keyLevelBreak, relativeStrength, spyAboveVWAP, qqqAboveVWAP },
+        stats:{
+          close:currentClose.toFixed(2),
+          vwap:vwapSeries[i].toFixed(2),
+          previousSessionHigh:previousSessionHigh ? previousSessionHigh.toFixed(2) : 'n/a',
+          tickerChange:tickerChange.toFixed(2),
           compareSymbol,
-          marketChange: marketChange.toFixed(2),
+          marketChange:marketChange.toFixed(2),
           score
         }
       };
@@ -1160,32 +899,44 @@
     async function fetchChunk(symbols, apiKey, forceRefresh = false) {
       const cached = [];
       const uncached = [];
+
       for (const symbol of symbols) {
         const raw = localStorage.getItem(getCacheKey(symbol));
+
         if (!forceRefresh && raw) {
-          try { cached.push(JSON.parse(raw)); continue; } catch (_) {}
+          try {
+            cached.push(JSON.parse(raw));
+            continue;
+          } catch (_) {}
         }
+
         uncached.push(symbol);
       }
-      if (!uncached.length) return { rows: cached, source: 'cached' };
+
+      if (!uncached.length) return { rows:cached, source:'cached' };
 
       const url = `${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url);
       const data = await res.json();
+
       if (!res.ok) throw new Error(data?.message || 'Request failed');
 
       const out = [...cached];
-      const entries = uncached.length === 1 && data?.values ? { [uncached[0]]: data } : data;
+      const entries = uncached.length === 1 && data?.values ? { [uncached[0]]:data } : data;
+
       for (const symbol of uncached) {
         const item = entries[symbol];
         if (!item || !item.values) continue;
+
         const ascBars = normalizeSeries(item.values.slice().reverse());
         if (ascBars.length < 30) continue;
+
         const scored = scoreTickerFromBars(symbol, ascBars);
         localStorage.setItem(getCacheKey(symbol), JSON.stringify(scored));
         out.push(scored);
       }
-      return { rows: out, source: cached.length ? 'mixed' : 'fresh' };
+
+      return { rows:out, source:cached.length ? 'mixed' : 'fresh' };
     }
 
     async function fetchIntradayTicker(symbol, apiKey) {
@@ -1211,18 +962,21 @@
         const item = data[symbol];
         if (item?.values) out[symbol] = normalizeSeries(item.values.slice().reverse());
       }
+
       return out;
     }
 
     function formatUpdatedTime() {
       return new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/Chicago',
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', second: '2-digit'
+        timeZone:'America/Chicago',
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'numeric', minute:'2-digit', second:'2-digit'
       }).format(new Date()) + ' CT';
     }
 
     async function fetchMarketTrend(apiKey, forceRefresh = false) {
       const cacheKey = `${CACHE_PREFIX}:${getMarketDateKey()}:MARKET_TREND`;
+
       if (!forceRefresh) {
         const raw = localStorage.getItem(cacheKey);
         if (raw) {
@@ -1233,7 +987,8 @@
       const url = `${API_ROOT}?symbol=SPY&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`;
       const res = await fetch(url);
       const data = await res.json();
-      if (!res.ok || !data?.values) return { label: 'unknown', detail: 'SPY unavailable' };
+
+      if (!res.ok || !data?.values) return { label:'unknown', detail:'SPY unavailable' };
 
       const bars = normalizeSeries(data.values.slice().reverse());
       const closes = bars.map(b => b.close);
@@ -1247,8 +1002,9 @@
       if (closes[i] > ema20Series[i] && ema5Series[i] > ema20Series[i] && macdLine[i] > signalLine[i] && rsi14[i] >= 50) label = 'bullish';
       else if (closes[i] < ema20Series[i] && ema5Series[i] < ema20Series[i] && macdLine[i] < signalLine[i] && rsi14[i] < 50) label = 'bearish';
 
-      const result = { label, detail: `SPY ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'}` };
+      const result = { label, detail:`SPY ${closes[i].toFixed(2)} · RSI ${rsi14[i]?.toFixed(1) ?? 'n/a'}` };
       localStorage.setItem(cacheKey, JSON.stringify(result));
+
       return result;
     }
 
@@ -1265,6 +1021,7 @@
         ['RSI in target range', item.checks.rsiBullish],
         ['Volume above average', item.checks.volumeBullish]
       ];
+
       if (isRisky) checks.push(['Below-zero bullish setup', item.checks.belowZeroBullish]);
 
       return checks.map(([label, pass]) => `
@@ -1292,6 +1049,7 @@
       if (!signal) return '';
 
       const checks = signal.stats?.checks;
+
       const checkRows = checks ? `
         <div class="detail-grid" style="margin-top:10px;">
           <div class="indicator-row"><span class="${checks.aboveVWAP ? 'check' : 'xmark'}">${checks.aboveVWAP ? '✓' : '✕'}</span><span>Above VWAP</span></div>
@@ -1321,15 +1079,14 @@
           <div class="detail-text">${signal.text}</div>
           ${checkRows}
           ${stats}
-          <div class="rule-line">
-            Only act on ENTER NOW when the daily setup is Strong.
-          </div>
+          <div class="rule-line">Only act on ENTER NOW when the daily setup is Strong.</div>
         </div>
       `;
     }
 
     function renderFindOneChecks(result) {
       if (!result?.checks) return '';
+
       const checks = result.checks;
       const rows = [
         ['Above VWAP', checks.aboveVWAP],
@@ -1370,7 +1127,7 @@
       card.innerHTML = `
         <div class="stock-top">
           <div class="stock-left">
-            <span class="fire-badge">${isGood ? '🔥' : '👀'}</span>
+            <span class="fire-badge">${isGood ? '★' : '•'}</span>
             <div class="ticker-wrap">
               <div class="ticker">${result.ticker}</div>
               <div class="subline">Find Me One Score · ${Math.round(result.score)}%</div>
@@ -1381,9 +1138,11 @@
             <div class="confidence">${Math.round(result.score)}%</div>
           </div>
         </div>
+
         ${isGood ? '<div class="best-setup-label">Best Intraday Setup Right Now</div>' : ''}
         <div class="quick-line">${result.text}</div>
         <div class="tap-line">Tap for full Find Me One details</div>
+
         <div id="${summaryId}" class="detail-panel">
           <div class="detail-title">9-Point Intraday Checklist</div>
           ${renderFindOneChecks(result)}
@@ -1396,7 +1155,7 @@
             <div class="stat-chip">Market Move: ${result.stats?.marketChange ?? '0.00'}%</div>
           </div>
           <div class="rule-line">
-            Required must-have checks: Above VWAP + Breakout + Momentum + Not Overextended. Ideal setup also includes volume, market support, and relative strength.
+            Required must-have checks: Above VWAP + Breakout + Momentum + Not Overextended.
           </div>
           ${runnerText}
         </div>
@@ -1412,7 +1171,9 @@
 
     function renderCard(item, options = {}) {
       const { isRisky = false, rank = null, topHighlight = false, intradaySignal = null, isBudgetFriendly = false } = options;
+
       if (isBudgetFriendly) item.isBudgetFriendly = true;
+
       const card = document.createElement('div');
       card.className = `stock-card clickable ${topHighlight ? 'top-highlight' : ''}`;
 
@@ -1420,9 +1181,10 @@
       const verdict = isRisky ? 'watch' : item.verdict;
       const verdictLabel = getVerdictLabel(verdict);
       const verdictClass = verdict === 'strong' ? 'verdict-strong' : verdict === 'watch' ? 'verdict-watch' : 'verdict-avoid';
-      const badge = topHighlight ? '<span class="fire-badge">🔥</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
+      const badge = topHighlight ? '<span class="fire-badge">★</span>' : rank ? `<span class="rank-badge">#${rank}</span>` : '<span class="rank-badge">•</span>';
       const confidence = isRisky ? getConfidence(item.riskyScore) : item.confidence;
       const entry = getEntryTiming(item, isRisky);
+
       const bestLabel = topHighlight
         ? '<div class="best-setup-label">Best Setup Right Now</div>'
         : isBudgetFriendly
@@ -1438,14 +1200,17 @@
               <div class="subline">${item.lastDate} · ${item.streak}</div>
             </div>
           </div>
+
           <div class="stock-right">
             <div class="verdict ${verdictClass}">${verdictLabel}</div>
             <div class="confidence">${confidence}%</div>
           </div>
         </div>
+
         ${bestLabel}
-        <div class="quick-line">${topHighlight ? '🔥 Best setup on the board right now. ' : ''}${isBudgetFriendly ? '💰 Lower-cost setup. ' : ''}${quickSummary(item, isRisky)}</div>
+        <div class="quick-line">${topHighlight ? 'Best setup on the board right now. ' : ''}${isBudgetFriendly ? 'Lower-cost setup. ' : ''}${quickSummary(item, isRisky)}</div>
         <div class="tap-line">Tap for full details</div>
+
         <div id="${summaryId}" class="detail-panel">
           <div class="detail-title">Full Breakdown</div>
           <div class="detail-text">${buildFullExplanation(item, rank, isRisky)}</div>
@@ -1470,6 +1235,8 @@
     }
 
     async function runScan(forceRefresh = false) {
+      showTab('topTab');
+
       const apiKey = document.getElementById('apiKey').value.trim();
       const status = document.getElementById('status');
       const topFive = document.getElementById('topFive');
@@ -1480,6 +1247,7 @@
 
       if (!apiKey) {
         status.textContent = 'Paste and save your Twelve Data API key first.';
+        topFive.innerHTML = '<div class="note-card">Paste and save your Twelve Data API key first.</div>';
         return;
       }
 
@@ -1489,6 +1257,7 @@
       const all = [];
       const sourcesSeen = new Set();
       const chunks = [];
+
       for (let i = 0; i < WATCHLIST.length; i += BATCH_SIZE) {
         chunks.push(WATCHLIST.slice(i, i + BATCH_SIZE));
       }
@@ -1500,6 +1269,7 @@
         try {
           const result = await fetchChunk(chunk, apiKey, forceRefresh);
           sourcesSeen.add(result.source);
+
           result.rows.forEach(row => {
             const existing = all.findIndex(x => x.ticker === row.ticker);
             if (existing >= 0) all[existing] = row;
@@ -1518,9 +1288,12 @@
       }
 
       let marketTrend = null;
-      try { marketTrend = await fetchMarketTrend(apiKey, forceRefresh); } catch (_) {}
+      try {
+        marketTrend = await fetchMarketTrend(apiKey, forceRefresh);
+      } catch (_) {}
 
       const ranked = [...all].sort((a, b) => b.score - a.score).slice(0, 5);
+
       const affordable = [...all]
         .filter(item => {
           const price = parseFloat(item.stats.close);
@@ -1528,10 +1301,12 @@
         })
         .sort((a, b) => b.score - a.score)[0];
 
-      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, { rank: idx + 1, topHighlight: idx === 0 })));
+      topFive.innerHTML = '';
+      ranked.forEach((item, idx) => topFive.appendChild(renderCard(item, { rank:idx + 1, topHighlight:idx === 0 })));
 
       if (affordable) {
-        budgetFriendly.appendChild(renderCard(affordable, { isBudgetFriendly: true }));
+        budgetFriendly.innerHTML = '';
+        budgetFriendly.appendChild(renderCard(affordable, { isBudgetFriendly:true }));
       } else {
         budgetFriendly.innerHTML = `<div class="note-card">No budget-friendly setup under $${BUDGET_FRIENDLY_MAX_PRICE} met the criteria right now.</div>`;
       }
@@ -1545,9 +1320,12 @@
     }
 
     async function checkSingleTicker() {
+      showTab('tickerTab');
+
       const apiKey = document.getElementById('apiKey').value.trim();
       const ticker = document.getElementById('singleTickerInput').value.trim().toUpperCase();
       const resultEl = document.getElementById('singleTickerResult');
+
       resultEl.innerHTML = '';
 
       if (!apiKey || !ticker) {
@@ -1567,15 +1345,16 @@
         }
 
         let intradaySignal = null;
+
         try {
           const intradayBars = await fetchIntradayTicker(ticker, apiKey);
           intradaySignal = analyzeIntradayEntry(intradayBars);
         } catch (intradayErr) {
           intradaySignal = {
-            label: 'WAIT',
-            className: 'entry-wait',
-            text: `Intraday check unavailable right now: ${intradayErr.message}`,
-            stats: null
+            label:'WAIT',
+            className:'entry-wait',
+            text:`Intraday check unavailable right now: ${intradayErr.message}`,
+            stats:null
           };
         }
 
@@ -1593,6 +1372,8 @@
     }
 
     async function findMeOne() {
+      showTab('findTab');
+
       const apiKey = document.getElementById('apiKey').value.trim();
       const resultEl = document.getElementById('findOneResult');
       const status = document.getElementById('status');
@@ -1619,6 +1400,7 @@
         }
 
         const results = [];
+
         for (const ticker of FIND_ME_ONE_LIST) {
           const bars = data[ticker];
           if (!bars) continue;
@@ -1640,10 +1422,11 @@
         if (best.score < 60 || !best.mustHave) {
           const noTrade = {
             ...best,
-            label: 'NO TRADE',
-            className: 'entry-no',
-            text: `No clean setup right now. ${best.ticker} is the closest name at ${Math.round(best.score)}%, but it is missing one or more must-have checks. Stay patient.`
+            label:'NO TRADE',
+            className:'entry-no',
+            text:`No clean setup right now. ${best.ticker} is the closest name at ${Math.round(best.score)}%, but it is missing one or more must-have checks. Stay patient.`
           };
+
           resultEl.appendChild(renderFindOneCard(noTrade, runnersUp));
           status.textContent = 'Find Me One finished: no clean setup right now.';
         } else if (best.score >= 75 && best.mustHave) {
@@ -1652,17 +1435,18 @@
         } else {
           const watchOnly = {
             ...best,
-            label: 'WATCH ONLY',
-            className: 'entry-wait',
-            text: `${best.ticker} is the closest setup at ${Math.round(best.score)}%, but it is not clean enough to force. Watch it for stronger confirmation.`
+            label:'WATCH ONLY',
+            className:'entry-wait',
+            text:`${best.ticker} is the closest setup at ${Math.round(best.score)}%, but it is not clean enough to force. Watch it for stronger confirmation.`
           };
+
           resultEl.appendChild(renderFindOneCard(watchOnly, runnersUp));
           status.textContent = `Find Me One found ${best.ticker} as the closest setup, but it is watch-only.`;
         }
 
         updateMetaInfo(formatUpdatedTime(), 'fresh intraday', {
-          label: best.checks?.marketSupportive ? 'supportive' : 'not supportive',
-          detail: `SPY VWAP ${best.checks?.spyAboveVWAP ? 'above' : 'below'} · QQQ VWAP ${best.checks?.qqqAboveVWAP ? 'above' : 'below'}`
+          label:best.checks?.marketSupportive ? 'supportive' : 'not supportive',
+          detail:`SPY VWAP ${best.checks?.spyAboveVWAP ? 'above' : 'below'} · QQQ VWAP ${best.checks?.qqqAboveVWAP ? 'above' : 'below'}`
         });
       } catch (err) {
         resultEl.innerHTML = `<div class="note-card">Find Me One failed: ${err.message}</div>`;
@@ -1670,7 +1454,12 @@
       }
     }
 
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    });
+
     const buttons = document.querySelectorAll('button');
+
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
         btn.classList.add('button-active');
