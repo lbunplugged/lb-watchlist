@@ -11,7 +11,7 @@
 h1{margin:0;font-size:44px;line-height:.96;letter-spacing:.02em;color:#fff8e7}.subtitle{margin-top:10px;color:#d8c48b;font-size:15px;line-height:1.55}.legend{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}.pill{display:inline-flex;padding:8px 12px;border-radius:999px;border:1px solid var(--soft);background:rgba(255,255,255,.03);color:#d1c39b;font-size:12px;font-weight:700}
 .control-label,.section-title{color:var(--gold);font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}.workflow-line{margin:6px 0 12px;padding:10px 12px;border-radius:14px;border:1px solid rgba(212,175,55,.16);background:rgba(212,175,55,.05);color:#e5d9b8;font-size:13px;line-height:1.45}.stack{display:grid;gap:10px}
 input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px solid rgba(255,255,255,.07);padding:16px;border-radius:16px;font-size:15px;outline:none}input:focus{border-color:rgba(212,175,55,.45);box-shadow:0 0 0 3px rgba(212,175,55,.10)}
-.button-grid,.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}button{width:100%;background:linear-gradient(180deg,#141416,#0d0d10);color:#fff9eb;border:1px solid rgba(212,175,55,.22);padding:15px 14px;cursor:pointer;border-radius:16px;font-size:15px;font-weight:900;letter-spacing:.04em;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}button:hover{background:linear-gradient(180deg,#18181c,#111116)}button.button-active,button:active,.tab-btn.active-tab{background:linear-gradient(180deg,rgba(212,175,55,.30),rgba(212,175,55,.10));border-color:rgba(212,175,55,.50);box-shadow:0 0 24px rgba(212,175,55,.14);transform:translateY(1px)}.signature-btn{border-color:rgba(56,210,122,.38);background:linear-gradient(180deg,rgba(56,210,122,.18),rgba(13,13,16,.96))}
+.button-grid,.trade-action-grid,.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.save-key-row{display:grid;grid-template-columns:1fr;gap:10px}.tabs{grid-template-columns:repeat(4,1fr)}button{width:100%;background:linear-gradient(180deg,#141416,#0d0d10);color:#fff9eb;border:1px solid rgba(212,175,55,.22);padding:15px 14px;cursor:pointer;border-radius:16px;font-size:15px;font-weight:900;letter-spacing:.04em;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}button:hover{background:linear-gradient(180deg,#18181c,#111116)}button.button-active,button:active,.tab-btn.active-tab{background:linear-gradient(180deg,rgba(212,175,55,.30),rgba(212,175,55,.10));border-color:rgba(212,175,55,.50);box-shadow:0 0 24px rgba(212,175,55,.14);transform:translateY(1px)}.signature-btn,.spyqqq-btn{border-color:rgba(56,210,122,.38);background:linear-gradient(180deg,rgba(56,210,122,.18),rgba(13,13,16,.96))}
 .status-box{margin-top:10px;padding:14px;border-radius:16px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05)}.status{color:#e6dcc0;font-size:14px;line-height:1.5;min-height:20px}.meta{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.5}
 .tabs{margin-bottom:14px;position:sticky;top:0;z-index:5;padding:8px 0;background:linear-gradient(180deg,#070707,rgba(7,7,7,.88));backdrop-filter:blur(10px)}.tab-btn{font-size:12px;min-height:46px}.tab-panel{display:none}.tab-panel.active-panel{display:block}.list{display:grid;gap:10px}
 .stock-card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:14px}.stock-card.clickable{cursor:pointer}.stock-card.top-highlight{border-color:rgba(56,210,122,.42);background:linear-gradient(180deg,rgba(56,210,122,.10),rgba(255,255,255,.02));box-shadow:0 0 26px rgba(56,210,122,.16),0 16px 36px rgba(0,0,0,.42)}
@@ -20,7 +20,7 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
 .confidence{min-width:54px;text-align:center;padding:8px;border-radius:999px;font-size:12px;font-weight:900;color:#f8f1da;border:1px solid rgba(212,175,55,.22);background:rgba(212,175,55,.08)}.best-setup-label{display:inline-flex;margin-top:10px;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#dfffe9;background:rgba(56,210,122,.12);border:1px solid rgba(56,210,122,.24)}
 .quick-line{margin-top:10px;font-size:13px;color:#ded7c2;line-height:1.45}.tap-line{margin-top:8px;font-size:11px;color:var(--blue)}.detail-panel{display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}.detail-title{font-size:13px;color:var(--gold);font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}.detail-text{font-size:14px;line-height:1.58;color:#ece5d2}.detail-grid{display:grid;gap:8px;margin-top:12px}.indicator-row{display:flex;align-items:center;gap:8px;font-size:14px;color:#e7e1cf}.check,.xmark{font-weight:900;font-size:17px;width:22px;text-align:center}.check{color:var(--green)}.xmark{color:var(--red)}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.stat-chip{padding:10px;border-radius:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);font-size:12px;color:#d5ccb2}.entry-box{margin-top:12px;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}.entry-title{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;color:var(--gold)}.rule-line{margin-top:10px;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5;color:#d9cfb1;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.02)}.note-card{padding:14px;border-radius:18px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);color:#d4cab0;font-size:14px;line-height:1.55}.footer{margin-top:16px;color:var(--muted);font-size:12px;line-height:1.65;padding:4px 2px 0}
-@media(max-width:560px){.button-grid,.tabs{grid-template-columns:1fr}.tabs{position:static}.stock-top{align-items:flex-start}.stock-right{flex-direction:column;align-items:flex-end}h1{font-size:38px}}
+@media(max-width:560px){.button-grid,.trade-action-grid,.tabs{grid-template-columns:1fr}.tabs{position:static}.stock-top{align-items:flex-start}.stock-right{flex-direction:column;align-items:flex-end}h1{font-size:38px}}
 </style>
 </head>
 <body>
@@ -36,10 +36,13 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
     <div class="workflow-line">LB's Signature Play hunts for your pullback recovery setup: strong daily chart, stock drops at least 1% below previous close, then recovers with EMA5 over MA20 and VWAP reclaim.</div>
     <div class="stack">
       <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key">
-      <div class="button-grid">
+      <div class="save-key-row">
         <button id="saveKeyBtn">Save Key</button>
+      </div>
+      <div class="trade-action-grid">
         <button id="showBtn">Scan Market</button>
         <button id="signatureBtn" class="signature-btn">LB's Signature Play</button>
+        <button id="spyQqqBtn" class="spyqqq-btn">SPY / QQQ Check</button>
       </div>
     </div>
     <div class="status-box">
@@ -59,6 +62,7 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
   <div class="tabs">
     <button class="tab-btn active-tab" data-tab="topTab">Top Setups</button>
     <button class="tab-btn" data-tab="signatureTab">LB's Signature Play</button>
+    <button class="tab-btn" data-tab="spyQqqTab">SPY / QQQ</button>
     <button class="tab-btn" data-tab="tickerTab">Check Ticker</button>
   </div>
 
@@ -71,11 +75,15 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
     <div class="section-card"><div class="section-title">LB's Signature Play Result</div><div id="signatureResult" class="list"><div class="note-card">Click LB's Signature Play to scan 75 high-volume names for pullback recovery entries.</div></div></div>
   </div>
 
+  <div id="spyQqqTab" class="tab-panel">
+    <div class="section-card"><div class="section-title">SPY / QQQ Options Check</div><div id="spyQqqResult" class="list"><div class="note-card">Click SPY / QQQ Check for a strict beginner-friendly options read. It compares SPY and QQQ, then says which ETF is cleaner, whether calls or puts are ready, where the setup is wrong, and where the first profit targets are.</div></div></div>
+  </div>
+
   <div id="tickerTab" class="tab-panel">
     <div class="section-card"><div class="section-title">Execution Check</div><div id="singleTickerResult"><div class="note-card">Enter a ticker above, then click Check Ticker.</div></div></div>
   </div>
 
-  <div class="footer">Tabs keep each result area separate so you can move between your market scan, LB's Signature Play, and ticker checks without scrolling through everything.</div>
+  <div class="footer">Tabs keep each result area separate so you can move between your market scan, LB's Signature Play, SPY / QQQ options check, and ticker checks without scrolling through everything.</div>
 </div>
 
 <script>
@@ -91,6 +99,8 @@ const BATCH_DELAY_MS=30000;
 const OUTPUTSIZE=80;
 const INTRADAY_INTERVAL='5min';
 const INTRADAY_OUTPUTSIZE=80;
+const ENTRY_INTERVAL='1min';
+const ENTRY_OUTPUTSIZE=120;
 const BUDGET_FRIENDLY_MAX_PRICE=150;
 const SIGNATURE_MIN_SESSION_BARS=6;
 const SIGNATURE_FULL_MA_BARS=20;
@@ -200,6 +210,41 @@ let label='WAIT',className='entry-wait',text='Intraday setup is forming, but it 
 return{label,className,text,stats:{close:currentClose.toFixed(2),vwap:currentVWAP.toFixed(2),ema5:currentEMA5?currentEMA5.toFixed(2):'n/a',prevHigh:prevHigh.toFixed(2),volume:currentVolume,avgVolume:avgVolume?Math.round(avgVolume):null,extendedPct:extendedPct.toFixed(2),checks:{aboveVWAP,reclaimVWAP,breakout,momentum,volumeConfirmed,notExtended}}};
 }
 
+function getCentralTimeParts(){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());return{hour:parseInt(parts.find(p=>p.type==='hour').value,10),minute:parseInt(parts.find(p=>p.type==='minute').value,10)};}
+function getTradingWindow(){const t=getCentralTimeParts(),mins=t.hour*60+t.minute;if(mins<570)return{label:'WAIT FOR FIRST HOUR CLOSE',quality:'early',note:'It is before 9:30 AM CT. For this strategy, the first serious read comes after the first full 60-minute candle is finished.'};if(mins<=660)return{label:'BEST WINDOW',quality:'best',note:'This is the preferred morning window. Setups still need clean confirmation, but this is when trend breakouts are most useful.'};if(mins<=780)return{label:'MIDDAY CAUTION',quality:'midday',note:'It is midday. The button will require a cleaner setup because chop and option decay can be tougher.'};return{label:'LATE DAY CAUTION',quality:'late',note:'It is later in the day. Same-day options can lose value quickly, so beginners should be extra selective or use more time.'};}
+function nearestRoundTarget(price,direction){if(!Number.isFinite(price))return null;const step=price>450?5:2.5;return direction==='call'?Math.ceil((price+.01)/step)*step:Math.floor((price-.01)/step)*step;}
+function pickTarget(price,levels,direction,risk,multiple){const filtered=levels.filter(v=>Number.isFinite(v)&&(direction==='call'?v>price:v<price)).sort((a,b)=>direction==='call'?a-b:b-a);const rr=Number.isFinite(risk)&&risk>0?(direction==='call'?price+risk*multiple:price-risk*multiple):null;if(filtered.length&&rr!==null)return direction==='call'?Math.min(filtered[0],rr):Math.max(filtered[0],rr);return filtered[0]??rr;}
+function analyzeSpyQqqSymbol(symbol,dailyBars,fiveBars,oneBars){
+const session=getLatestSessionBars(fiveBars||[]),entrySession=getLatestSessionBars(oneBars||[]);if(!dailyBars?.length||session.length<15||entrySession.length<12)return{symbol,valid:false,reason:'Not enough daily, 5-minute, or 1-minute data came back yet.'};
+const closes=session.map(b=>b.close),opens=session.map(b=>b.open),highs=session.map(b=>b.high),lows=session.map(b=>b.low),volumes=session.map(b=>b.volume),e8=ema(closes,8),e21=ema(closes,21),vwaps=calculateVWAP(session),rsis=rsi(closes,14),volAvg=sma(volumes,20),i=closes.length-1,p=i-1;
+const price=closes[i],vwap=vwaps[i],ema8=e8[i],ema21=e21[i],r=rsis[i],avgVol=volAvg[i]||averageLast(volumes,i,20)||0,volumeStrong=avgVol>0&&volumes[i]>avgVol*1.05,aboveVWAP=price>vwap,belowVWAP=price<vwap,emaBull=ema8>ema21&&price>ema8,emaBear=ema8<ema21&&price<ema8,higherLow=lows[i]>lows[Math.max(0,i-1)]&&lows[i-1]>=lows[Math.max(0,i-2)],lowerHigh=highs[i]<highs[Math.max(0,i-1)]&&highs[i-1]<=highs[Math.max(0,i-2)];
+const opening=session.slice(0,Math.min(12,session.length)),orHigh=Math.max(...opening.map(b=>b.high)),orLow=Math.min(...opening.map(b=>b.low)),sessionHigh=Math.max(...highs),sessionLow=Math.min(...lows),prevDaily=dailyBars[dailyBars.length-2]||dailyBars[dailyBars.length-1],prevHigh=prevDaily.high,prevLow=prevDaily.low,prevClose=prevDaily.close;
+const callBreak=price>orHigh||price>prevHigh,putBreak=price<orLow||price<prevLow,chop=Math.abs(price-vwap)/price<.0015&&Math.abs(ema8-ema21)/price<.0012;
+const entryCloses=entrySession.map(b=>b.close),entryOpens=entrySession.map(b=>b.open),entryHighs=entrySession.map(b=>b.high),entryLows=entrySession.map(b=>b.low),entryVwaps=calculateVWAP(entrySession),j=entryCloses.length-1,k=j-1;
+const oneCallTrigger=entryCloses[j]>entryVwaps[j]&&entryCloses[j]>entryOpens[j]&&entryCloses[j]>entryHighs[k],onePutTrigger=entryCloses[j]<entryVwaps[j]&&entryCloses[j]<entryOpens[j]&&entryCloses[j]<entryLows[k],callExtended=Math.abs(price-vwap)/price>.0075&&price>vwap,putExtended=Math.abs(price-vwap)/price>.0075&&price<vwap;
+let callScore=0,putScore=0;if(aboveVWAP)callScore+=20;if(emaBull)callScore+=20;if(higherLow)callScore+=12;if(callBreak)callScore+=18;if(volumeStrong)callScore+=10;if(r>=50&&r<=72)callScore+=12;if(oneCallTrigger)callScore+=8;if(callExtended)callScore-=18;if(chop)callScore-=35;
+if(belowVWAP)putScore+=20;if(emaBear)putScore+=20;if(lowerHigh)putScore+=12;if(putBreak)putScore+=18;if(volumeStrong)putScore+=10;if(r<=50&&r>=28)putScore+=12;if(onePutTrigger)putScore+=8;if(putExtended)putScore-=18;if(chop)putScore-=35;
+const direction=callScore>=putScore?'call':'put',score=Math.max(callScore,putScore),stop=direction==='call'?Math.min(vwap,lows[i],entryLows[j]):Math.max(vwap,highs[i],entryHighs[j]),risk=Math.abs(price-stop),levels=direction==='call'?[prevHigh,orHigh,sessionHigh,nearestRoundTarget(price,'call'),price+risk*1.5,price+risk*2.5]:[prevLow,orLow,sessionLow,nearestRoundTarget(price,'put'),price-risk*1.5,price-risk*2.5],target1=pickTarget(price,levels,direction,risk,1.5),target2=pickTarget(price,levels,direction,risk,2.5);
+return{symbol,valid:true,price,vwap,ema8,ema21,r,orHigh,orLow,prevHigh,prevLow,prevClose,sessionHigh,sessionLow,volume:volumes[i],avgVol,volumeStrong,aboveVWAP,belowVWAP,emaBull,emaBear,higherLow,lowerHigh,callBreak,putBreak,chop,oneCallTrigger,onePutTrigger,callExtended,putExtended,callScore,putScore,direction,score,stop,risk,target1,target2};
+}
+function makeSpyQqqDecision(spy,qqq){
+const window=getTradingWindow();if(!spy.valid||!qqq.valid)return{label:'DO NOT TRADE',className:'entry-no',best:null,direction:'none',why:'The checker could not get enough daily, 5-minute, and 1-minute data for both SPY and QQQ. No beginner should force a trade without complete data.',window,spy,qqq};
+const spyDir=spy.direction,qqqDir=qqq.direction,bothChop=spy.chop&&qqq.chop,agree=spyDir===qqqDir&&!bothChop,best=spy.score>=qqq.score?spy:qqq,confirm=best.symbol==='SPY'?qqq:spy;let label='DO NOT TRADE',className='entry-no',direction='none',why='SPY and QQQ are not giving a clean setup together.';
+if(!agree){why='SPY and QQQ are not agreeing. One is cleaner in one direction while the other is mixed or weak, so the safer beginner choice is no trade.';}
+else if(bothChop){why='Both ETFs are chopping around VWAP with flat structure. That can fake out calls and puts, so the clean answer is do not trade.';}
+else{direction=best.direction;if(best.score>=70&&confirm.score>=50&&window.quality!=='early'){label=direction==='call'?'CALLS READY':'PUTS READY';className='entry-good';why=`${best.symbol} has the cleaner ${direction==='call'?'bullish':'bearish'} setup and the other ETF is confirming the same direction.`;}else if(best.score>=55&&window.quality!=='early'){label=direction==='call'||direction==='put'?'WAIT FOR PULLBACK':'WAIT';className='entry-wait';why=`${best.symbol} has the better direction, but the entry is not clean enough to chase yet.`;}else if(window.quality==='early'){label='WAIT FOR FIRST HOUR CLOSE';className='entry-wait';why='The first hour has not closed yet. This strategy is stricter after 9:30 AM CT because the opening range is clearer.';}else{why='There is not enough confirmation from VWAP, 5-minute trend, volume, opening range, and 1-minute timing.';}}
+if((best.callExtended&&direction==='call')||(best.putExtended&&direction==='put')){label='WAIT FOR PULLBACK';className='entry-wait';why=`${best.symbol} is moving in the right direction, but price is stretched away from VWAP. A beginner should wait for a pullback instead of chasing.`;}
+if(window.quality==='late'&&className==='entry-good'){label='CAUTION: LATE DAY';className='entry-wait';why+=` ${window.note}`;}
+return{label,className,best:label==='DO NOT TRADE'||label==='WAIT FOR FIRST HOUR CLOSE'?null:best,confirm,direction,why,window,spy,qqq};
+}
+function renderSpyQqqChecklist(x){if(!x)return'<div class="rule-line">ETF data was unavailable.</div>';if(!x.valid)return`<div class="rule-line">${x.symbol}: ${escapeHtml(x.reason)}</div>`;const dir=x.direction==='call';const rows=[['5-minute above VWAP',x.aboveVWAP],['5-minute below VWAP',x.belowVWAP],['EMA 8 above EMA 21',x.emaBull],['EMA 8 below EMA 21',x.emaBear],['Opening range breakout',x.callBreak],['Opening range breakdown',x.putBreak],['Volume above average',x.volumeStrong],['RSI confirms direction',dir?(x.r>=50&&x.r<=72):(x.r<=50&&x.r>=28)],['1-minute entry trigger',dir?x.oneCallTrigger:x.onePutTrigger],['Not choppy around VWAP',!x.chop],['Not extended from VWAP',dir?!x.callExtended:!x.putExtended]];return`<div class="entry-box"><div class="entry-title">${x.symbol} Checklist</div><div class="stats-grid"><div class="stat-chip">Price: ${money(x.price)}</div><div class="stat-chip">VWAP: ${money(x.vwap)}</div><div class="stat-chip">5m RSI: ${Number.isFinite(x.r)?x.r.toFixed(1):'n/a'}</div><div class="stat-chip">Call score: ${Math.round(x.callScore)}%</div><div class="stat-chip">Put score: ${Math.round(x.putScore)}%</div><div class="stat-chip">Opening range: ${money(x.orLow)} - ${money(x.orHigh)}</div></div><div class="detail-grid">${rows.map(([l,p])=>`<div class="indicator-row"><span class="${p?'check':'xmark'}">${p?'OK':'NO'}</span><span>${l}</span></div>`).join('')}</div></div>`;}
+function renderSpyQqqResult(decision){
+const best=decision.best,side=decision.direction==='call'?'calls':decision.direction==='put'?'puts':'none',optionGuide=side==='none'?'No option contract suggested because there is no clean trade.':'For beginners: look at ATM or slightly ITM options, preferably 1-2 days out. Same-day options are aggressive and need a very clean morning trend.';
+const plan=best?`<div class="entry-box"><div class="entry-title">Beginner Trade Plan</div><div class="detail-text"><strong>Best ETF:</strong> ${best.symbol}<br><strong>Contract idea:</strong> ${best.symbol} ${side}<br><strong>Entry area:</strong> ${side==='calls'?`Wait for price to hold above ${money(Math.max(best.orHigh,best.prevHigh,best.vwap))} or pull back and reclaim on the 1-minute chart.`:`Wait for price to stay below ${money(Math.min(best.orLow,best.prevLow,best.vwap))} or bounce and reject on the 1-minute chart.`}<br><strong>Stop / exit if wrong:</strong> ${side==='calls'?`Exit if ${best.symbol} loses VWAP or breaks below the retest candle low near ${money(best.stop)}.`:`Exit if ${best.symbol} reclaims VWAP or breaks above the rejection candle high near ${money(best.stop)}.`}<br><strong>Target 1:</strong> ${money(best.target1)}<br><strong>Target 2:</strong> ${money(best.target2)}<br><strong>Risk guide:</strong> About ${money(best.risk)} per ETF share from current price to the stop area.</div><div class="rule-line">Beginner protection: if price hits the stop, exit. Do not average down, and do not turn a day trade into a hope trade.</div></div>`:'';
+const paragraph=best?`${decision.why} A beginner should not enter from a big stretched candle. Use the 5-minute chart for the main decision and the 1-minute chart only for the entry trigger. ${optionGuide}`:`${decision.why} ${decision.window.note} ${optionGuide}`;
+const card=document.createElement('div');card.className=`stock-card ${decision.className==='entry-good'?'top-highlight':''}`;card.innerHTML=`<div class="stock-top"><div class="stock-left"><span class="star-badge">${decision.className==='entry-good'?'*':'-'}</span><div class="ticker-wrap"><div class="ticker">${best?best.symbol:'SPY / QQQ'}</div><div class="subline">Strict options check | 5-minute decision + 1-minute entry timing</div></div></div><div class="stock-right"><div class="entry-pill ${decision.className}">${decision.label}</div></div></div><div class="quick-line">${paragraph}</div>${plan}<div class="entry-box"><div class="entry-title">Time Filter</div><div class="detail-text"><strong>${decision.window.label}:</strong> ${decision.window.note}</div></div>${renderSpyQqqChecklist(decision.spy)}${renderSpyQqqChecklist(decision.qqq)}<div class="rule-line">Educational scanner only. It helps build a plan, but it cannot guarantee a trade will work.</div>`;return card;
+}
+
 function renderIndicators(item,isRisky=false){const rows=[['Price above 20 EMA',item.checks.priceAbove20],['5 EMA bullish vs 20 EMA',item.checks.emaBullish],['MACD bullish',item.checks.macdBullish],['RSI in target range',item.checks.rsiBullish],['Volume above average',item.checks.volumeBullish]];if(isRisky)rows.push(['Below-zero bullish setup',item.checks.belowZeroBullish]);return rows.map(([l,p])=>`<div class="indicator-row"><span class="${p?'check':'xmark'}">${p?'OK':'NO'}</span><span>${l}</span></div>`).join('');}
 function renderStats(item){return`<div class="stats-grid"><div class="stat-chip">Close: ${item.stats.close}</div><div class="stat-chip">RSI: ${item.stats.rsi}</div><div class="stat-chip">5 EMA: ${item.stats.ema5}</div><div class="stat-chip">20 EMA: ${item.stats.ema20}</div><div class="stat-chip">MACD: ${item.stats.macd}</div><div class="stat-chip">Signal: ${item.stats.signal}</div></div>`;}
 function renderIntradaySignal(signal){if(!signal)return'';const c=signal.stats?.checks;const rows=c?`<div class="detail-grid"><div class="indicator-row"><span class="${c.aboveVWAP?'check':'xmark'}">${c.aboveVWAP?'OK':'NO'}</span><span>Above VWAP</span></div><div class="indicator-row"><span class="${c.reclaimVWAP?'check':'xmark'}">${c.reclaimVWAP?'OK':'NO'}</span><span>Reclaimed VWAP</span></div><div class="indicator-row"><span class="${c.breakout?'check':'xmark'}">${c.breakout?'OK':'NO'}</span><span>Break above previous 5-min high</span></div><div class="indicator-row"><span class="${c.momentum?'check':'xmark'}">${c.momentum?'OK':'NO'}</span><span>Bullish momentum candle</span></div><div class="indicator-row"><span class="${c.volumeConfirmed?'check':'xmark'}">${c.volumeConfirmed?'OK':'NO'}</span><span>Volume above recent average</span></div><div class="indicator-row"><span class="${c.notExtended?'check':'xmark'}">${c.notExtended?'OK':'NO'}</span><span>Not overly extended</span></div></div>`:'';const stats=signal.stats?`<div class="stats-grid"><div class="stat-chip">Close: ${signal.stats.close}</div><div class="stat-chip">VWAP: ${signal.stats.vwap}</div><div class="stat-chip">5 EMA: ${signal.stats.ema5}</div><div class="stat-chip">Prev 5m High: ${signal.stats.prevHigh}</div><div class="stat-chip">Vol: ${signal.stats.volume}</div><div class="stat-chip">Avg Vol: ${signal.stats.avgVolume??'n/a'}</div></div>`:'';return`<div class="entry-box"><div class="entry-title">Intraday Entry Signal</div><div class="entry-pill ${signal.className}">${signal.label}</div><div class="detail-text">${signal.text}</div>${rows}${stats}<div class="rule-line">Only act on ENTER NOW when the daily setup is Strong.</div></div>`;}
@@ -223,6 +268,28 @@ let source='cached';if(sourcesSeen.has('fresh')&&sourcesSeen.size===1)source='fr
 status.textContent=`Done. Ranked ${all.length} tickers${tickerWarnings.length?`; ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}.`:'.'}`;updateMetaInfo(formatUpdatedTime(),source,marketTrend);
 }
 async function checkSingleTicker(){showTab('tickerTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),ticker=document.getElementById('singleTickerInput').value.trim().toUpperCase(),out=document.getElementById('singleTickerResult');out.innerHTML='';if(!apiKey||!ticker){out.innerHTML='<div class="note-card">Enter your API key and a ticker symbol first.</div>';return;}document.getElementById('status').textContent=`Checking ${ticker}...`;try{const daily=await fetchChunk([ticker],apiKey,true),item=daily.rows[0];renderTickerWarnings(out);if(!item){out.innerHTML+=`<div class="note-card">No daily data returned for ${ticker}.</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;return;}let intradaySignal=null;try{intradaySignal=analyzeIntradayEntry(await fetchIntradayTicker(ticker,apiKey));}catch(e){intradaySignal={label:'WAIT',className:'entry-wait',text:`Intraday check unavailable right now: ${e.message}`,stats:null};}out.innerHTML='';renderTickerWarnings(out);const card=renderCard(item,{intradaySignal});out.appendChild(card);card.querySelector('.detail-panel').style.display='block';document.getElementById('status').textContent=`${ticker} checked with daily + intraday logic${tickerWarnings.length?' with ticker notes.':'.'}`;}catch(err){renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;}}
+async function runSpyQqqCheck(){
+showTab('spyQqqTab');resetTickerWarnings();
+const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('spyQqqResult'),status=document.getElementById('status');
+out.innerHTML='';
+if(!apiKey){out.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';status.textContent='Paste and save your Twelve Data API key first.';return;}
+status.textContent='Checking SPY and QQQ for a strict options setup...';
+out.innerHTML='<div class="note-card">Checking daily levels, 5-minute trend, 1-minute entry timing, VWAP, opening range, RSI, volume, targets, and stop areas for SPY and QQQ...</div>';
+try{
+const [dailyData,fiveData,spyOne,qqqOne]=await Promise.all([
+fetchDailyBarsBatch(['SPY','QQQ'],apiKey),
+fetchIntradayBatch(['SPY','QQQ'],apiKey),
+fetchSeriesForSymbol('SPY',apiKey,ENTRY_INTERVAL,ENTRY_OUTPUTSIZE),
+fetchSeriesForSymbol('QQQ',apiKey,ENTRY_INTERVAL,ENTRY_OUTPUTSIZE)
+]);
+const spy=analyzeSpyQqqSymbol('SPY',dailyData.SPY,fiveData.SPY,spyOne);
+const qqq=analyzeSpyQqqSymbol('QQQ',dailyData.QQQ,fiveData.QQQ,qqqOne);
+const decision=makeSpyQqqDecision(spy,qqq);
+out.innerHTML='';renderTickerWarnings(out);out.appendChild(renderSpyQqqResult(decision));
+status.textContent=`SPY / QQQ check complete: ${decision.label}${decision.best?` on ${decision.best.symbol}`:''}.`;
+updateMetaInfo(formatUpdatedTime(),'fresh daily + 5m + 1m',{label:decision.label,detail:decision.best?`${decision.best.symbol} ${decision.direction}`:'no trade'});
+}catch(err){out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">SPY / QQQ check failed: ${err.message}</div>`;status.textContent='SPY / QQQ check failed.';}
+}
 async function runSignaturePlay(){
 showTab('signatureTab');resetTickerWarnings();
 const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('signatureResult'),status=document.getElementById('status');
@@ -248,6 +315,7 @@ document.getElementById('saveKeyBtn').addEventListener('click',saveApiKey);
 document.getElementById('showBtn').addEventListener('click',()=>runScan(false));
 document.getElementById('checkTickerBtn').addEventListener('click',checkSingleTicker);
 document.getElementById('signatureBtn').addEventListener('click',runSignaturePlay);
+document.getElementById('spyQqqBtn').addEventListener('click',runSpyQqqCheck);
 loadApiKey();
 </script>
 </body>
