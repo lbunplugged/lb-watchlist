@@ -23,6 +23,7 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
 .quick-line{margin-top:10px;font-size:13px;color:#ded7c2;line-height:1.45}.tap-line{margin-top:8px;font-size:11px;color:var(--blue)}.detail-panel{display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}.detail-title{font-size:13px;color:var(--gold);font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}.detail-text{font-size:14px;line-height:1.58;color:#ece5d2}.detail-grid{display:grid;gap:8px;margin-top:12px}.indicator-row{display:flex;align-items:center;gap:8px;font-size:14px;color:#e7e1cf}.check,.xmark{font-weight:900;font-size:17px;width:22px;text-align:center}.check{color:var(--green)}.xmark{color:var(--red)}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.stat-chip{padding:10px;border-radius:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);font-size:12px;color:#d5ccb2}.entry-box{margin-top:12px;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}.entry-title{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;color:var(--gold)}.rule-line{margin-top:10px;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5;color:#d9cfb1;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.02)}.note-card{padding:14px;border-radius:18px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);color:#d4cab0;font-size:14px;line-height:1.55}.ema-values{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.ema-value{padding:12px 8px;text-align:center;border-radius:14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}.ema-value strong{display:block;margin-top:4px;font-size:17px;color:#fff8e7}.history-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}.history-table th,.history-table td{padding:9px 5px;text-align:right;border-bottom:1px solid rgba(255,255,255,.06)}.history-table th:first-child,.history-table td:first-child{text-align:left}.positive{color:#7ff0a8}.negative{color:#ff9ba5}.sample-warning{color:var(--yellow);font-weight:900}.event-risk{margin-top:10px;padding:10px 12px;border:1px solid rgba(240,200,75,.28);background:rgba(240,200,75,.08);border-radius:14px;color:#fff2be;font-size:12px;line-height:1.5}.footer{margin-top:16px;color:var(--muted);font-size:12px;line-height:1.65;padding:4px 2px 0}
 @media(max-width:560px){.button-grid,.trade-action-grid,.tabs{grid-template-columns:1fr}.tabs{position:static}.stock-top{align-items:flex-start}.stock-right{flex-direction:column;align-items:flex-end}.ema-values{grid-template-columns:1fr}.history-table thead{display:none}.history-table,.history-table tbody,.history-table tr,.history-table td{display:block;width:100%}.history-table tr{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}.history-table td{display:flex;justify-content:space-between;gap:10px;border:0;padding:4px}.history-table td:before{content:attr(data-label);color:var(--muted)}h1{font-size:38px}}
+button:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -38,17 +39,22 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
     <div class="workflow-line">LB's Signature Play hunts for your pullback recovery setup: strong daily chart, stock drops at least 1% below previous close, then recovers with EMA5 over MA20 and VWAP reclaim.</div>
     <div class="stack">
       <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key">
+      <label for="creditsPerMinute" class="meta">API credits per minute (match your Twelve Data plan)</label>
+      <input id="creditsPerMinute" type="number" min="1" max="1000" step="1" value="8">
+      <div class="meta">Default: 8 credits/minute. A full uncached market scan can take about 25 minutes at this limit. Progress and waiting countdowns appear below. Successful market batches are cached for up to 15 minutes.</div>
       <div class="save-key-row">
         <button id="saveKeyBtn">Save Key</button>
       </div>
       <div class="trade-action-grid">
-        <button id="showBtn">Scan Market</button>
+        <button id="showBtn" type="button">Scan Market</button>
         <button id="signatureBtn" class="signature-btn">LB's Signature Play</button>
         <button id="emaCrossBtn" class="ema-cross-btn">EMA Cross Scanner</button>
       </div>
     </div>
+    <button id="stopScanBtn" type="button" disabled style="margin-top:10px">Stop Scan</button>
     <div class="status-box">
-      <div class="status" id="status">Ready. Save your API key, then scan the market.</div>
+      <div class="status" id="status" role="status">Ready. Save your API key, then scan the market.</div>
+      <div class="meta" id="requestInfo" role="status"></div>
       <div class="meta" id="metaInfo">Last updated: -- | Data source: -- | Market trend: --</div>
     </div>
   </div>
@@ -89,31 +95,167 @@ input{width:100%;background:rgba(255,255,255,.025);color:var(--text);border:1px 
 </div>
  
 <script>
+// One shared request queue prevents overlapping scanners from exhausting credits.
+const storage = {
+  getItem(key) { try { return localStorage.getItem(key); } catch (_) { return null; } },
+  setItem(key, value) { try { localStorage.setItem(key, value); return true; } catch (_) { return false; } }
+};
+const REQUEST_TIMEOUT_MS = 20000;
+const CREDIT_WINDOW_MS = 61000;
+let activeScan = null, requestQueue = Promise.resolve(), creditUses = [];
+const responseCache = new Map();
+function scanError(message) { const error = new Error(message); error.scanFatal = true; return error; }
+function checkStopped(signal) { if (signal?.aborted) throw scanError('Scan stopped. You can start another scan.'); }
+function requestProgress(message) { document.getElementById('requestInfo').textContent = message; }
+function creditLimit() { return Math.max(1, Math.min(1000, Math.floor(Number(document.getElementById('creditsPerMinute').value) || 8))); }
+function abortableDelay(ms, signal) {
+  checkStopped(signal);
+  return new Promise((resolve, reject) => {
+    const done = () => { signal?.removeEventListener('abort', stop); resolve(); };
+    const timer = setTimeout(done, ms);
+    const stop = () => { clearTimeout(timer); signal.removeEventListener('abort', stop); reject(scanError('Scan stopped. You can start another scan.')); };
+    signal?.addEventListener('abort', stop, {once:true});
+  });
+}
+async function countdown(ms, signal, message) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    checkStopped(signal);
+    requestProgress(`${message} Continuing in ${Math.ceil((end-Date.now())/1000)} seconds. Stop is available.`);
+    await abortableDelay(Math.min(1000, end-Date.now()), signal);
+  }
+}
+async function reserveCredits(count, signal) {
+  while (true) {
+    checkStopped(signal);
+    creditUses = creditUses.filter(use => Date.now()-use.time < CREDIT_WINDOW_MS);
+    if (creditUses.reduce((sum,use)=>sum+use.count,0)+count <= creditLimit()) break;
+    await countdown(Math.max(1,CREDIT_WINDOW_MS-(Date.now()-creditUses[0].time)),signal,'Waiting for API credits.');
+  }
+  creditUses.push({time:Date.now(),count});
+}
+async function timedJSON(url, signal) {
+  checkStopped(signal);
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  signal?.addEventListener('abort', cancel, {once:true});
+  let timer;
+  try {
+    // The deadline covers both connecting and reading the response body.
+    return await Promise.race([
+      (async()=>{ const response = await fetch(url,{signal:controller.signal}); const data = await response.json(); return {response,data}; })(),
+      new Promise((_,reject)=>{ timer=setTimeout(()=>{controller.abort();reject(scanError('The data request timed out after 20 seconds. Try scanning again; completed market batches are cached.'));},REQUEST_TIMEOUT_MS); }),
+      new Promise((_,reject)=>{ controller.signal.addEventListener('abort',()=>reject(scanError(signal?.aborted?'Scan stopped. You can start another scan.':'The data request timed out after 20 seconds. Try scanning again.')),{once:true}); })
+    ]);
+  } catch(error) {
+    if(error.scanFatal) throw error;
+    throw scanError(signal?.aborted?'Scan stopped. You can start another scan.':'Could not read Twelve Data. Check your connection and try again.');
+  } finally { clearTimeout(timer); signal?.removeEventListener('abort',cancel); }
+}
+function apiProblem(response,data) {
+  const items = data && typeof data==='object' ? [data,...Object.values(data)] : [];
+  const errors = items.filter(item=>item && typeof item==='object' && (item.status==='error'||Number(item.code)>=400));
+  return errors.find(item=>[401,403,429].includes(Number(item.code))) || (!response.ok ? {code:response.status,message:data?.message} : null);
+}
+async function requestPart(url, count, signal) {
+  for(let attempt=0; attempt<2; attempt++) {
+    await reserveCredits(count,signal);
+    const label = url.searchParams.get('symbol') || 'earnings calendar';
+    requestProgress(`Requesting ${label} (${url.searchParams.get('interval')||'calendar'}). Timeout: 20 seconds.`);
+    const {response,data} = await timedJSON(url.toString(),signal);
+    const problem = apiProblem(response,data);
+    if(problem) {
+      const code=Number(problem.code), message=String(problem.message||`API error ${code}`);
+      if(code===429) {
+        if(/daily|per day|each day/i.test(message)) throw scanError('The daily API credit limit was reached. Try again after the provider resets your quota.');
+        if(attempt===1) throw scanError('The API is still rate-limiting requests. Check your plan limit or other apps using this key, then try again.');
+        await countdown(65000,signal,'Twelve Data rate limit reached; retrying once.');
+        continue;
+      }
+      if(code===401) throw scanError('Twelve Data rejected your API key. Check and save the key, then try again.');
+      // The optional earnings calendar must not discard an otherwise completed EMA scan.
+      if(code===403 && url.pathname.endsWith('/earnings_calendar')) return {ok:false,status:403,json:async()=>data};
+      if(code===403) throw scanError('Your Twelve Data plan does not allow this request. Check the data access included with your plan.');
+      if(code>=500) throw scanError('Twelve Data is temporarily unavailable. Try again later.');
+    }
+    return {ok:response.ok,status:response.status,json:async()=>data};
+  }
+}
+function managedFetch(rawUrl) {
+  const signal=activeScan?.controller.signal;
+  const run=async()=>{
+    checkStopped(signal);
+    const url=new URL(rawUrl),symbols=(url.searchParams.get('symbol')||'').split(',').filter(Boolean);
+    if(!symbols.length) return requestPart(url,1,signal);
+    const merged={},pending=[],ttl=url.searchParams.get('interval')==='1day'?300000:30000;
+    const cacheKey=symbol=>`${url.searchParams.get('apikey')}|${symbol}|${url.searchParams.get('interval')}|${url.searchParams.get('outputsize')}`;
+    for(const symbol of symbols){const hit=responseCache.get(cacheKey(symbol));if(hit&&Date.now()-hit.time<ttl)merged[symbol]=hit.data;else pending.push(symbol);}
+    const size=Math.min(25,creditLimit());
+    for(let offset=0;offset<pending.length;offset+=size){
+      const group=pending.slice(offset,offset+size),part=new URL(url);
+      part.searchParams.set('symbol',group.join(','));
+      const result=await requestPart(part,group.length,signal),data=await result.json();
+      for(const symbol of group){
+        const item=group.length===1&&data?.values?data:data?.[symbol]||{status:'error',code:data?.code||404,message:data?.message||'No data returned for this symbol.'};
+        merged[symbol]=item;
+        if(item.values) responseCache.set(cacheKey(symbol),{time:Date.now(),data:item});
+      }
+    }
+    return {ok:true,status:200,json:async()=>symbols.length===1?merged[symbols[0]]:merged};
+  };
+  const job=requestQueue.then(run);
+  requestQueue=job.catch(()=>{});
+  return job;
+}
+async function runAction(action) {
+  if(activeScan) return;
+  const job={controller:new AbortController()}; activeScan=job;
+  const controls=['showBtn','signatureBtn','emaCrossBtn','checkTickerBtn','saveKeyBtn','apiKey','creditsPerMinute'];
+  controls.forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
+  document.getElementById('stopScanBtn').disabled=false;
+  requestProgress('Starting. Requests are paced to your selected API credit limit.');
+  try { await action(); checkStopped(job.controller.signal); requestProgress('Finished.'); }
+  catch(error) {
+    job.controller.abort();
+    const message=error.scanFatal?error.message:`Scan failed: ${error.message}`;
+    document.getElementById('status').textContent=message;
+    requestProgress('The scan is no longer running. Completed market batches remain cached for another attempt.');
+    const container=document.querySelector('.tab-panel.active-panel .list')||document.getElementById('singleTickerResult');
+    if(container){const note=document.createElement('div');note.className='note-card';note.textContent=message;container.prepend(note);}
+  } finally {
+    await requestQueue;
+    activeScan=null;
+    controls.forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
+    document.getElementById('stopScanBtn').disabled=true;
+  }
+}
+
+
 const WATCHLIST=['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','AMD','NFLX','ORCL','CRM','ADBE','NOW','QCOM','AMAT','MU','ARM','SHOP','PANW','MRVL','SMCI','INTC','TSM','ASML','LRCX','KLAC','MCHP','NXPI','ANET','SNPS','CDNS','CRWD','DDOG','MDB','NET','SNOW','PLTR','CFLT','ESTC','COIN','MARA','RIOT','RBLX','ROKU','SOFI','UBER','LYFT','XYZ','PYPL','HOOD','AFRM','UPST','APP','DUOL','CELH','CAVA','HIMS','IONQ','RKLB','JPM','GS','MS','BAC','WFC','C','SCHW','BLK','V','MA','AXP','COF','CME','ICE','SPGI','MCO','CB','PGR','AIG','BX','XOM','CVX','DVN','OXY','COP','EOG','SLB','HAL','FANG','APA','XLE','MPC','VLO','PSX','LNG','EQT','KMI','WMB','ENB','PXD','LLY','UNH','JNJ','ABBV','MRK','AMGN','TMO','ISRG','DHR','GILD','REGN','MRNA','VRTX','BSX','SYK','BMY','PFE','MDT','CI','HUM','COST','HD','LOW','NKE','DIS','SBUX','MCD','CMG','BKNG','ABNB','TGT','WMT','TJX','ROST','LULU','ULTA','DECK','ELF','ETSY','EBAY','BA','CAT','DE','GE','RTX','LMT','NOC','GD','ETN','PH','HON','UPS','FDX','UNP','NSC','CSX','DAL','UAL','AAL','JBLU','SPY','QQQ','IWM','DIA','XLK','XLF','XLV','XLI','XLY','XLC','XBI','SMH','SOXX','ARKK','KRE','TAN','IBB','TQQQ','SQQQ','FXI','BABA','PDD','JD','BIDU','NOK','SAP','NVO','RACE','MELI','SE'];
 const SIGNATURE_LIST=['SPY','QQQ','IWM','DIA','SMH','AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','AVGO','AMD','NFLX','CRM','ORCL','ADBE','QCOM','NOW','MU','AMAT','PANW','CRWD','PLTR','COIN','MARA','RIOT','HOOD','UBER','SHOP','XYZ','PYPL','AFRM','SOFI','JPM','GS','MS','BAC','WFC','C','SCHW','AXP','V','MA','COST','HD','LOW','WMT','TGT','NKE','SBUX','MCD','CMG','DIS','LLY','UNH','MRK','ABBV','AMGN','PFE','TMO','ISRG','JNJ','XOM','CVX','OXY','SLB','COP','BA','CAT','DE','GE','RTX','HON'];
  
 const API_ROOT='https://api.twelvedata.com/time_series';
-const CACHE_PREFIX='lb-watchlist-signature-v4';
+const CACHE_PREFIX='lb-watchlist-signature-v5';
 const SYMBOL_ALIASES={XYZ:['SQ'],PXD:['XOM']};
 let tickerWarnings=[];
-const BATCH_SIZE=25;
-const BATCH_DELAY_MS=30000;
+const BATCH_SIZE=8;
+const BATCH_DELAY_MS=0;
 const OUTPUTSIZE=80;
 const INTRADAY_INTERVAL='5min';
 const INTRADAY_OUTPUTSIZE=80;
 const ENTRY_INTERVAL='1min';
 const ENTRY_OUTPUTSIZE=120;
 const EMA_HISTORY_SIZE=550;
-const EMA_CACHE_PREFIX='lb-ema-cross-v1';
+const EMA_CACHE_PREFIX='lb-ema-cross-v2';
 const BUDGET_FRIENDLY_MAX_PRICE=150;
 const SIGNATURE_MIN_SESSION_BARS=6;
 const SIGNATURE_FULL_MA_BARS=20;
  
 function showTab(tabId){document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active-tab',btn.dataset.tab===tabId));document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('active-panel',panel.id===tabId));document.querySelector('.tabs').scrollIntoView({behavior:'smooth',block:'start'});}
 function getMarketDateKey(){const now=new Date();const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hour12:false});const p=f.formatToParts(now);const d=`${p.find(x=>x.type==='year').value}-${p.find(x=>x.type==='month').value}-${p.find(x=>x.type==='day').value}`;const h=parseInt(p.find(x=>x.type==='hour').value,10);return h>=16?d+'-afterclose':d;}
-function getCacheKey(symbol){return`${CACHE_PREFIX}:${getMarketDateKey()}:${symbol}`;}
-function saveApiKey(){const key=document.getElementById('apiKey').value.trim();if(!key){alert('Paste your Twelve Data API key first.');return;}localStorage.setItem('lb_twelve_data_key',key);document.getElementById('status').textContent='API key saved in this browser.';}
-function loadApiKey(){document.getElementById('apiKey').value=localStorage.getItem('lb_twelve_data_key')||'';}
+function getCacheKey(symbol){return`${CACHE_PREFIX}:${getMarketDateKey()}:${Math.floor(Date.now()/900000)}:${symbol}`;}
+function saveApiKey(){const key=document.getElementById('apiKey').value.trim();if(!key){alert('Paste your Twelve Data API key first.');return;}const saved=storage.setItem('lb_twelve_data_key',key);document.getElementById('status').textContent=saved?'API key saved in this browser.':'Browser storage is unavailable. You can still scan using the key above.';}
+function loadApiKey(){document.getElementById('apiKey').value=storage.getItem('lb_twelve_data_key')||'';}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function ema(values,period){const k=2/(period+1),out=[];let prev=values[0];out.push(prev);for(let i=1;i<values.length;i++){prev=values[i]*k+prev*(1-k);out.push(prev);}return out;}
 function sma(values,period){const out=[];for(let i=0;i<values.length;i++){if(i<period-1){out.push(null);continue;}let s=0;for(let j=i-period+1;j<=i;j++)s+=values[j];out.push(s/period);}return out;}
@@ -127,7 +269,7 @@ function addTickerWarning(symbol,message){if(!tickerWarnings.some(w=>w.symbol===
 function getTickerCandidates(symbol){return Array.from(new Set([symbol,...(SYMBOL_ALIASES[symbol]||[])]));}
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function renderTickerWarnings(container){if(!tickerWarnings.length)return;const div=document.createElement('div');div.className='note-card';div.innerHTML=`<strong>Ticker notes:</strong><br>${tickerWarnings.map(w=>`${escapeHtml(w.symbol)}: ${escapeHtml(w.message)}`).join('<br>')}`;container.appendChild(div);}
-async function fetchSeriesForSymbol(symbol,apiKey,interval,outputsize){let lastMessage='No data returned';for(const candidate of getTickerCandidates(symbol)){try{const url=`${API_ROOT}?symbol=${encodeURIComponent(candidate)}&interval=${interval}&outputsize=${outputsize}&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url),data=await res.json();if(res.ok&&data?.values){if(candidate!==symbol)addTickerWarning(symbol,`Twelve Data did not return ${symbol}, so ${candidate} was used instead.`);return normalizeSeries(data.values.slice().reverse());}lastMessage=data?.message||lastMessage;}catch(err){lastMessage=err.message||lastMessage;}}addTickerWarning(symbol,lastMessage);return null;}
+async function fetchSeriesForSymbol(symbol,apiKey,interval,outputsize){let lastMessage='No data returned';for(const candidate of getTickerCandidates(symbol)){try{const url=`${API_ROOT}?symbol=${encodeURIComponent(candidate)}&interval=${interval}&outputsize=${outputsize}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url),data=await res.json();if(res.ok&&data?.values){if(candidate!==symbol)addTickerWarning(symbol,`Twelve Data did not return ${symbol}, so ${candidate} was used instead.`);return normalizeSeries(data.values.slice().reverse());}lastMessage=data?.message||lastMessage;}catch(err){if(err?.scanFatal)throw err;lastMessage=err.message||lastMessage;}}addTickerWarning(symbol,lastMessage);return null;}
 function streakLabel(closes){if(closes.length<2)return'No streak';const dir=closes.at(-1)>=closes.at(-2)?'positive':'negative';let c=1;for(let i=closes.length-1;i>0;i--){const d=closes[i]-closes[i-1];if(dir==='positive'&&d>=0)c++;else if(dir==='negative'&&d<0)c++;else break;}return`${c-1} day${c-1===1?'':'s'} ${dir}`;}
 function getVerdictFromScore(score){return score>=80?'strong':score>=35?'watch':'avoid';}
 function getVerdictLabel(v){return v==='strong'?'Strong Setup':v==='watch'?'Watch':'Avoid';}
@@ -169,15 +311,15 @@ return{ticker,score,label,className,text,dailyItem,checks:{dailyQualified,dailyM
 }
  
 async function fetchChunk(symbols,apiKey,forceRefresh=false){
-const cached=[],uncached=[];for(const symbol of symbols){const raw=localStorage.getItem(getCacheKey(symbol));if(!forceRefresh&&raw){try{cached.push(JSON.parse(raw));continue;}catch(_){}}uncached.push(symbol);}
+const cached=[],uncached=[];for(const symbol of symbols){const raw=storage.getItem(getCacheKey(symbol));if(!forceRefresh&&raw){try{cached.push(JSON.parse(raw));continue;}catch(_){if(_?.scanFatal)throw _;}}uncached.push(symbol);}
 if(!uncached.length)return{rows:cached,source:'cached'};
-const out=[...cached];let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url);data=await res.json();batchOk=res.ok;}catch(err){data={message:err.message};}
+const out=[...cached];let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
 if(!batchOk&&uncached.length>1)addTickerWarning('Batch request',data?.message||'Batch failed, so each ticker was checked one at a time.');
 const entries=batchOk?(uncached.length===1&&data?.values?{[uncached[0]]:data}:data):{};
-for(const symbol of uncached){let bars=null;const item=entries?.[symbol];if(item?.values)bars=normalizeSeries(item.values.slice().reverse());else bars=await fetchSeriesForSymbol(symbol,apiKey,'1day',OUTPUTSIZE);if(!bars||bars.length<30)continue;const scored=scoreTickerFromBars(symbol,bars);localStorage.setItem(getCacheKey(symbol),JSON.stringify(scored));out.push(scored);}return{rows:out,source:cached.length?'mixed':'fresh'};
+for(const symbol of uncached){let bars=null;const item=entries?.[symbol];if(item?.values)bars=normalizeSeries(item.values.slice().reverse());else bars=await fetchSeriesForSymbol(symbol,apiKey,'1day',OUTPUTSIZE);if(!bars||bars.length<30)continue;const scored=scoreTickerFromBars(symbol,bars);storage.setItem(getCacheKey(symbol),JSON.stringify(scored));out.push(scored);}return{rows:out,source:cached.length?'mixed':'fresh'};
 }
 async function fetchDailyBarsBatch(symbols,apiKey){
-let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url);data=await res.json();batchOk=res.ok;}catch(err){data={message:err.message};}
+let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
 if(!batchOk&&symbols.length>1)addTickerWarning('Daily batch',data?.message||'Daily batch failed, so each ticker was checked one at a time.');
 const out={};for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):await fetchSeriesForSymbol(symbol,apiKey,'1day',OUTPUTSIZE);if(bars?.length)out[symbol]=bars;}return out;
 }
@@ -185,15 +327,15 @@ async function fetchIntradayTicker(symbol,apiKey){
 const bars=await fetchSeriesForSymbol(symbol,apiKey,INTRADAY_INTERVAL,INTRADAY_OUTPUTSIZE);if(!bars?.length)throw new Error(`No intraday data returned for ${symbol}`);return bars;
 }
 async function fetchIntradayBatch(symbols,apiKey){
-let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=${INTRADAY_INTERVAL}&outputsize=${INTRADAY_OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url);data=await res.json();batchOk=res.ok;}catch(err){data={message:err.message};}
+let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=${INTRADAY_INTERVAL}&outputsize=${INTRADAY_OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
 if(!batchOk&&symbols.length>1)addTickerWarning('Intraday batch',data?.message||'Intraday batch failed, so each ticker was checked one at a time.');
 const out={};for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):await fetchSeriesForSymbol(symbol,apiKey,INTRADAY_INTERVAL,INTRADAY_OUTPUTSIZE);if(bars?.length)out[symbol]=bars;}return out;
 }
 function formatUpdatedTime(){return new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',second:'2-digit'}).format(new Date())+' CT';}
 async function fetchMarketTrend(apiKey,forceRefresh=false){
-const cacheKey=`${CACHE_PREFIX}:${getMarketDateKey()}:MARKET_TREND`;if(!forceRefresh){const raw=localStorage.getItem(cacheKey);if(raw){try{return JSON.parse(raw);}catch(_){}}}
-const url=`${API_ROOT}?symbol=SPY&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url),data=await res.json();if(!res.ok||!data?.values)return{label:'unknown',detail:'SPY unavailable'};
-const bars=normalizeSeries(data.values.slice().reverse()),closes=bars.map(b=>b.close),e5=ema(closes,5),e20=ema(closes,20),{macdLine:m,signalLine:s}=macd(closes),r=rsi(closes,14),i=closes.length-1;let label='neutral';if(closes[i]>e20[i]&&e5[i]>e20[i]&&m[i]>s[i]&&r[i]>=50)label='bullish';else if(closes[i]<e20[i]&&e5[i]<e20[i]&&m[i]<s[i]&&r[i]<50)label='bearish';const result={label,detail:`SPY ${closes[i].toFixed(2)} | RSI ${r[i]?.toFixed(1)??'n/a'}`};localStorage.setItem(cacheKey,JSON.stringify(result));return result;
+const cacheKey=`${CACHE_PREFIX}:${getMarketDateKey()}:MARKET_TREND`;if(!forceRefresh){const raw=storage.getItem(cacheKey);if(raw){try{return JSON.parse(raw);}catch(_){if(_?.scanFatal)throw _;}}}
+const url=`${API_ROOT}?symbol=SPY&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url),data=await res.json();if(!res.ok||!data?.values)return{label:'unknown',detail:'SPY unavailable'};
+const bars=normalizeSeries(data.values.slice().reverse()),closes=bars.map(b=>b.close),e5=ema(closes,5),e20=ema(closes,20),{macdLine:m,signalLine:s}=macd(closes),r=rsi(closes,14),i=closes.length-1;let label='neutral';if(closes[i]>e20[i]&&e5[i]>e20[i]&&m[i]>s[i]&&r[i]>=50)label='bullish';else if(closes[i]<e20[i]&&e5[i]<e20[i]&&m[i]<s[i]&&r[i]<50)label='bearish';const result={label,detail:`SPY ${closes[i].toFixed(2)} | RSI ${r[i]?.toFixed(1)??'n/a'}`};storage.setItem(cacheKey,JSON.stringify(result));return result;
 }
 function updateMetaInfo(updatedAt,dataSource,marketTrend){const trendText=marketTrend?`${marketTrend.label}${marketTrend.detail?` (${marketTrend.detail})`:''}`:'--';document.getElementById('metaInfo').textContent=`Last updated: ${updatedAt||'--'} | Data source: ${dataSource||'--'} | Market trend: ${trendText}`;}
  
@@ -214,9 +356,9 @@ function emaCategoryOrder(category){return{'NEWLY CROSSED':0,'POTENTIAL CROSS TO
 function renderEarningsRisk(event,ticker,calendarAvailable){if(event){const dayWord=event.days===0?'today':event.days===1?'in 1 day':`in ${event.days} days`,timing=event.time&&event.time!=='Time Not Supplied'?` (${escapeHtml(event.time)})`:'';return`<div class="event-risk"><strong>Earnings risk ${dayWord}${timing}.</strong> This possible event can cause a large price gap. Verify the date before trading.</div>`;}if(!calendarAvailable)return`<div class="rule-line">Earnings calendar unavailable on this API plan or request. Search “${escapeHtml(ticker)} earnings date and upcoming company events” before trading.</div>`;return`<div class="rule-line">No earnings date was found in the next 30 days. Search “${escapeHtml(ticker)} upcoming company events” before trading because product announcements and other major events may not appear in this scanner.</div>`;}
 function renderEmaHistory(history){const warning=history.count<5?'<span class="sample-warning">Small Sample</span>':history.count<10?'<span class="sample-warning">Limited Sample</span>':'';const hitRows=[4,5,7,10].map(target=>{const h=history.hitRates[target];return`<div class="stat-chip">+${target}% within 10 days: ${h.hits}/${h.total} (${Math.round(h.rate)}%)</div>`;}).join('');const rows=history.recent.length?history.recent.map(e=>`<tr><td data-label="Cross date">${e.date}</td><td data-label="Cross day">${signedPercent(e.crossDayMove)}</td><td data-label="Max 10D" class="${e.maxGain>=0?'positive':'negative'}">${signedPercent(e.maxGain)}</td><td data-label="Drawdown" class="negative">${signedPercent(e.maxDrawdown)}</td><td data-label="Day 10">${signedPercent(e.day10Close)}</td><td data-label="Peak day">Day ${e.daysToPeak}</td></tr>`).join(''):'<tr><td colspan="6">No completed 10-day examples yet.</td></tr>';return`<div class="entry-box"><div class="entry-title">Historical EMA Cross Performance</div><div class="detail-text">Completed historical crosses: <strong>${history.count}</strong> ${warning}</div><div class="stats-grid">${hitRows}<div class="stat-chip">Median max move: ${signedPercent(history.medianGain)}</div><div class="stat-chip">Average max move: ${signedPercent(history.averageGain)}</div><div class="stat-chip">Average drawdown: ${signedPercent(history.averageDrawdown)}</div><div class="stat-chip">Median cross-day move: ${signedPercent(history.medianCrossMove)}</div></div><div class="detail-title" style="margin-top:14px">Last Three Completed Crosses</div><table class="history-table"><thead><tr><th>Date</th><th>Cross day</th><th>Max 10D</th><th>Drawdown</th><th>Day 10</th><th>Peak</th></tr></thead><tbody>${rows}</tbody></table><div class="rule-line">Max 10D is the highest price reached during the next 10 trading sessions, measured from the crossover close. It is not a guaranteed or automatically captured return.</div></div>`;}
 function renderEmaCard(item,earningsEvent,calendarAvailable){const card=document.createElement('div'),id=`ema-${item.ticker}-${Math.random().toString(36).slice(2,7)}`,recentText=item.category==='RECENTLY CROSSED'?` | crossed ${item.daysAgo} trading day${item.daysAgo===1?'':'s'} ago`:'';card.className=`stock-card clickable ${item.category==='NEWLY CROSSED'?'top-highlight':''}`;card.innerHTML=`<div class="stock-top"><div class="stock-left"><span class="star-badge">${item.category==='NEWLY CROSSED'?'*':'-'}</span><div class="ticker-wrap"><div class="ticker">${item.ticker}</div><div class="subline">Daily candle ${item.date}${recentText}</div></div></div><div class="stock-right"><div class="entry-pill ${emaCategoryClass(item.category)}">${item.category}</div></div></div><div class="ema-values"><div class="ema-value">Price<strong>${money(item.price)}</strong></div><div class="ema-value">EMA5<strong>${money(item.ema5)}</strong></div><div class="ema-value">SMA20<strong>${money(item.sma20)}</strong></div></div><div class="quick-line">EMA5 gap: <strong>${signedPercent(item.gap)}</strong> | EMA5 rising: <strong>${item.rising?'YES':'NO'}</strong> | Price above SMA20: <strong>${item.priceAbove?'YES':'NO'}</strong></div>${renderEarningsRisk(earningsEvent,item.ticker,calendarAvailable)}<div class="tap-line">Tap to see historical crossover results</div><div id="${id}" class="detail-panel">${renderEmaHistory(item.history)}</div>`;card.addEventListener('click',()=>{const panel=card.querySelector(`#${id}`);panel.style.display=panel.style.display==='block'?'none':'block';});return card;}
-async function fetchEarningsCalendar(apiKey){const cacheKey=`${EMA_CACHE_PREFIX}:earnings:${getEasternClock().date}`,cached=localStorage.getItem(cacheKey);if(cached){try{return JSON.parse(cached);}catch(_){}}const start=getEasternClock().date,endDate=new Date(`${start}T12:00:00`);endDate.setDate(endDate.getDate()+30);const end=`${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;try{const url=`https://api.twelvedata.com/earnings_calendar?start_date=${start}&end_date=${end}&country=United%20States&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url),data=await res.json();if(!res.ok||data?.status==='error')return{available:false,events:{}};const source=data.earnings||data,map={};for(const [date,items] of Object.entries(source)){if(!Array.isArray(items))continue;for(const item of items){if(!item.symbol||map[item.symbol])continue;const days=Math.round((new Date(`${date}T12:00:00`)-new Date(`${start}T12:00:00`))/86400000);if(days>=0)map[item.symbol]={date,days,time:item.time||''};}}const result={available:true,events:map};localStorage.setItem(cacheKey,JSON.stringify(result));return result;}catch(_){return{available:false,events:{}};}}
-async function fetchEmaBatch(symbols,apiKey){let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${EMA_HISTORY_SIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await fetch(url);data=await res.json();batchOk=res.ok;}catch(err){data={message:err.message};}if(!batchOk&&symbols.length>1)addTickerWarning('EMA batch',data?.message||'Batch failed; affected tickers will be skipped.');const results=[];for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):null;if(!bars){bars=await fetchSeriesForSymbol(symbol,apiKey,'1day',EMA_HISTORY_SIZE);}if(!bars||bars.length<35){addTickerWarning(symbol,'Insufficient daily history for the EMA cross scanner.');continue;}const analyzed=analyzeEmaCross(symbol,bars);if(analyzed)results.push(analyzed);}return results;}
-async function runEmaCrossScan(){showTab('emaCrossTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('emaCrossResult'),status=document.getElementById('status');out.innerHTML='';if(!apiKey){out.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';status.textContent='Paste and save your Twelve Data API key first.';return;}const cachedKey=getEmaResultCacheKey();let results=[];const cached=localStorage.getItem(cachedKey);if(cached){try{results=JSON.parse(cached);}catch(_){}}if(!results.length){const chunks=[];for(let i=0;i<WATCHLIST.length;i+=BATCH_SIZE)chunks.push(WATCHLIST.slice(i,i+BATCH_SIZE));for(let i=0;i<chunks.length;i++){status.textContent=`Scanning EMA setups... ${Math.min(i*BATCH_SIZE+chunks[i].length,WATCHLIST.length)} / ${WATCHLIST.length} stocks analyzed`;out.innerHTML=`<div class="note-card">Scanning EMA setups... ${Math.min(i*BATCH_SIZE+chunks[i].length,WATCHLIST.length)} / ${WATCHLIST.length} stocks analyzed</div>`;results.push(...await fetchEmaBatch(chunks[i],apiKey));if(i<chunks.length-1)await sleep(BATCH_DELAY_MS);}try{localStorage.setItem(cachedKey,JSON.stringify(results));}catch(_){}}status.textContent='Checking the upcoming earnings calendar...';const earnings=await fetchEarningsCalendar(apiKey);results.sort((a,b)=>emaCategoryOrder(a.category)-emaCategoryOrder(b.category)||(Math.abs(a.gap)-Math.abs(b.gap))||(b.history.hitRates[7].rate-a.history.hitRates[7].rate));out.innerHTML='';renderTickerWarnings(out);if(!results.length){out.innerHTML+='<div class="note-card">No approaching or recent EMA5/SMA20 crosses were found. That is a valid result; do not force a setup.</div>';}else results.forEach(item=>out.appendChild(renderEmaCard(item,earnings.events[item.ticker],earnings.available)));status.textContent=`EMA scan complete. Found ${results.length} qualifying setup${results.length===1?'':'s'}.`;updateMetaInfo(formatUpdatedTime(),'Twelve Data daily history',{label:'EMA scan',detail:`${results.length} qualifying setups`});}
+async function fetchEarningsCalendar(apiKey){const cacheKey=`${EMA_CACHE_PREFIX}:earnings:${getEasternClock().date}`,cached=storage.getItem(cacheKey);if(cached){try{return JSON.parse(cached);}catch(_){if(_?.scanFatal)throw _;}}const start=getEasternClock().date,endDate=new Date(`${start}T12:00:00`);endDate.setDate(endDate.getDate()+30);const end=`${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;try{const url=`https://api.twelvedata.com/earnings_calendar?start_date=${start}&end_date=${end}&country=United%20States&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url),data=await res.json();if(!res.ok||data?.status==='error')return{available:false,events:{}};const source=data.earnings||data,map={};for(const [date,items] of Object.entries(source)){if(!Array.isArray(items))continue;for(const item of items){if(!item.symbol||map[item.symbol])continue;const days=Math.round((new Date(`${date}T12:00:00`)-new Date(`${start}T12:00:00`))/86400000);if(days>=0)map[item.symbol]={date,days,time:item.time||''};}}const result={available:true,events:map};storage.setItem(cacheKey,JSON.stringify(result));return result;}catch(_){if(_?.scanFatal)throw _;return{available:false,events:{}};}}
+async function fetchEmaBatch(symbols,apiKey){let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${EMA_HISTORY_SIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}if(!batchOk&&symbols.length>1)addTickerWarning('EMA batch',data?.message||'Batch failed; affected tickers will be skipped.');const results=[];for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):null;if(!bars){bars=await fetchSeriesForSymbol(symbol,apiKey,'1day',EMA_HISTORY_SIZE);}if(!bars||bars.length<35){addTickerWarning(symbol,'Insufficient daily history for the EMA cross scanner.');continue;}const analyzed=analyzeEmaCross(symbol,bars);if(analyzed)results.push(analyzed);}return results;}
+async function runEmaCrossScan(){showTab('emaCrossTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('emaCrossResult'),status=document.getElementById('status');out.innerHTML='';if(!apiKey){out.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';status.textContent='Paste and save your Twelve Data API key first.';return;}const cachedKey=getEmaResultCacheKey();let results=[];const cached=storage.getItem(cachedKey);if(cached){try{results=JSON.parse(cached);}catch(_){if(_?.scanFatal)throw _;}}if(!results.length){const chunks=[];for(let i=0;i<WATCHLIST.length;i+=BATCH_SIZE)chunks.push(WATCHLIST.slice(i,i+BATCH_SIZE));for(let i=0;i<chunks.length;i++){status.textContent=`Scanning EMA setups... ${Math.min(i*BATCH_SIZE+chunks[i].length,WATCHLIST.length)} / ${WATCHLIST.length} stocks analyzed`;out.innerHTML=`<div class="note-card">Scanning EMA setups... ${Math.min(i*BATCH_SIZE+chunks[i].length,WATCHLIST.length)} / ${WATCHLIST.length} stocks analyzed</div>`;results.push(...await fetchEmaBatch(chunks[i],apiKey));if(i<chunks.length-1)await sleep(BATCH_DELAY_MS);}try{storage.setItem(cachedKey,JSON.stringify(results));}catch(_){if(_?.scanFatal)throw _;}}status.textContent='Checking the upcoming earnings calendar...';const earnings=await fetchEarningsCalendar(apiKey);results.sort((a,b)=>emaCategoryOrder(a.category)-emaCategoryOrder(b.category)||(Math.abs(a.gap)-Math.abs(b.gap))||(b.history.hitRates[7].rate-a.history.hitRates[7].rate));out.innerHTML='';renderTickerWarnings(out);if(!results.length){out.innerHTML+='<div class="note-card">No approaching or recent EMA5/SMA20 crosses were found. That is a valid result; do not force a setup.</div>';}else results.forEach(item=>out.appendChild(renderEmaCard(item,earnings.events[item.ticker],earnings.available)));status.textContent=`EMA scan complete. Found ${results.length} qualifying setup${results.length===1?'':'s'}.`;updateMetaInfo(formatUpdatedTime(),'Twelve Data daily history',{label:'EMA scan',detail:`${results.length} qualifying setups`});}
  
 function quickSummary(item,isRisky=false){if(item.isBudgetFriendly)return`Strongest setup under $${BUDGET_FRIENDLY_MAX_PRICE}. Lower-priced stock, but still judged by the same system.`;if(isRisky)return'Early setup. Interesting, but not fully confirmed yet.';if(item.verdict==='strong')return'One of the cleaner names on the board right now.';if(item.verdict==='watch')return'Keep this on watch, but it still needs more confirmation.';return'Stay away from this one right now.';}
 function buildFullExplanation(item,rank=null,isRisky=false){const p=[];if(isRisky)p.push(`${item.ticker} is the risky setup because momentum is trying to turn before full confirmation arrives.`);else if(item.verdict==='strong')p.push(`${item.ticker}${rank?` ranked #${rank}`:''} because several main signals are aligned.`);else if(item.verdict==='watch')p.push(`${item.ticker} has enough working to stay on your radar, but it does not have full alignment yet.`);else p.push(`${item.ticker} does not fit your current call strategy right now.`);p.push(item.checks.priceAbove20?'Price is above the 20 EMA.':'Price is below the 20 EMA.');p.push(item.checks.emaBullish?'The 5 EMA is bullish versus the 20 EMA.':'The 5 EMA is not giving a bullish advantage.');p.push(item.checks.macdBullish?'MACD is bullish.':'MACD is not bullish.');p.push(item.checks.rsiBullish?`RSI is in a healthy zone at ${item.stats.rsi}.`:`RSI is at ${item.stats.rsi}, outside your preferred zone.`);p.push(item.checks.volumeBullish?'Volume supports the move.':'Volume is not confirming the move.');return p.join(' ');}
@@ -284,15 +426,15 @@ topFive.innerHTML='';budgetFriendly.innerHTML='';
 if(!apiKey){status.textContent='Paste and save your Twelve Data API key first.';topFive.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';return;}
 status.textContent='Scanning market...';updateMetaInfo('--','--',null);
 const all=[],sourcesSeen=new Set(),chunks=[];for(let i=0;i<WATCHLIST.length;i+=BATCH_SIZE)chunks.push(WATCHLIST.slice(i,i+BATCH_SIZE));
-for(let i=0;i<chunks.length;i++){const chunk=chunks[i];status.textContent=`Scanning batch ${i+1} of ${chunks.length}... ${chunk.join(', ')}`;const result=await fetchChunk(chunk,apiKey,forceRefresh);sourcesSeen.add(result.source);result.rows.forEach(row=>{const ex=all.findIndex(x=>x.ticker===row.ticker);if(ex>=0)all[ex]=row;else all.push(row);});if(i<chunks.length-1){status.textContent=`Batch ${i+1} complete. Waiting about 30 seconds to stay inside the API limit...`;await sleep(BATCH_DELAY_MS);}}
-let marketTrend=null;try{marketTrend=await fetchMarketTrend(apiKey,forceRefresh)}catch(_){}
+for(let i=0;i<chunks.length;i++){const chunk=chunks[i];status.textContent=`Scanning batch ${i+1} of ${chunks.length}... ${chunk.join(', ')}`;const result=await fetchChunk(chunk,apiKey,forceRefresh);sourcesSeen.add(result.source);result.rows.forEach(row=>{const ex=all.findIndex(x=>x.ticker===row.ticker);if(ex>=0)all[ex]=row;else all.push(row);});if(BATCH_DELAY_MS>0&&i<chunks.length-1){status.textContent=`Batch ${i+1} complete. Waiting about 30 seconds to stay inside the API limit...`;await sleep(BATCH_DELAY_MS);}}
+let marketTrend=null;try{marketTrend=await fetchMarketTrend(apiKey,forceRefresh)}catch(_){if(_?.scanFatal)throw _;}
 const ranked=[...all].sort((a,b)=>b.score-a.score).slice(0,5),affordable=[...all].filter(item=>{const price=parseFloat(item.stats.close);return Number.isFinite(price)&&price<=BUDGET_FRIENDLY_MAX_PRICE&&item.verdict!=='avoid'}).sort((a,b)=>b.score-a.score)[0];
 topFive.innerHTML='';renderTickerWarnings(topFive);if(ranked.length)ranked.forEach((item,idx)=>topFive.appendChild(renderCard(item,{rank:idx+1,topHighlight:idx===0})));else topFive.innerHTML+='<div class="note-card">No ticker data came back from Twelve Data. Check your API key or try again later.</div>';
 if(affordable){budgetFriendly.innerHTML='';budgetFriendly.appendChild(renderCard(affordable,{isBudgetFriendly:true}));}else budgetFriendly.innerHTML=`<div class="note-card">No budget-friendly setup under $${BUDGET_FRIENDLY_MAX_PRICE} met the criteria right now.</div>`;
 let source='cached';if(sourcesSeen.has('fresh')&&sourcesSeen.size===1)source='fresh';else if(sourcesSeen.has('mixed')||(sourcesSeen.has('fresh')&&sourcesSeen.has('cached')))source='mixed';
 status.textContent=`Done. Ranked ${all.length} tickers${tickerWarnings.length?`; ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}.`:'.'}`;updateMetaInfo(formatUpdatedTime(),source,marketTrend);
 }
-async function checkSingleTicker(){showTab('tickerTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),ticker=document.getElementById('singleTickerInput').value.trim().toUpperCase(),out=document.getElementById('singleTickerResult');out.innerHTML='';if(!apiKey||!ticker){out.innerHTML='<div class="note-card">Enter your API key and a ticker symbol first.</div>';return;}document.getElementById('status').textContent=`Checking ${ticker}...`;try{const daily=await fetchChunk([ticker],apiKey,true),item=daily.rows[0];renderTickerWarnings(out);if(!item){out.innerHTML+=`<div class="note-card">No daily data returned for ${ticker}.</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;return;}let intradaySignal=null;try{intradaySignal=analyzeIntradayEntry(await fetchIntradayTicker(ticker,apiKey));}catch(e){intradaySignal={label:'WAIT',className:'entry-wait',text:`Intraday check unavailable right now: ${e.message}`,stats:null};}out.innerHTML='';renderTickerWarnings(out);const card=renderCard(item,{intradaySignal});out.appendChild(card);card.querySelector('.detail-panel').style.display='block';document.getElementById('status').textContent=`${ticker} checked with daily + intraday logic${tickerWarnings.length?' with ticker notes.':'.'}`;}catch(err){renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;}}
+async function checkSingleTicker(){showTab('tickerTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),ticker=document.getElementById('singleTickerInput').value.trim().toUpperCase(),out=document.getElementById('singleTickerResult');out.innerHTML='';if(!apiKey||!ticker){out.innerHTML='<div class="note-card">Enter your API key and a ticker symbol first.</div>';return;}document.getElementById('status').textContent=`Checking ${ticker}...`;try{const daily=await fetchChunk([ticker],apiKey,true),item=daily.rows[0];renderTickerWarnings(out);if(!item){out.innerHTML+=`<div class="note-card">No daily data returned for ${ticker}.</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;return;}let intradaySignal=null;try{intradaySignal=analyzeIntradayEntry(await fetchIntradayTicker(ticker,apiKey));}catch(e){if(e?.scanFatal)throw e;intradaySignal={label:'WAIT',className:'entry-wait',text:`Intraday check unavailable right now: ${e.message}`,stats:null};}out.innerHTML='';renderTickerWarnings(out);const card=renderCard(item,{intradaySignal});out.appendChild(card);card.querySelector('.detail-panel').style.display='block';document.getElementById('status').textContent=`${ticker} checked with daily + intraday logic${tickerWarnings.length?' with ticker notes.':'.'}`;}catch(err){if(err?.scanFatal)throw err;renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;}}
 async function runSpyQqqCheck(){
 showTab('spyQqqTab');resetTickerWarnings();
 const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('spyQqqResult'),status=document.getElementById('status');
@@ -313,7 +455,7 @@ const decision=makeSpyQqqDecision(spy,qqq);
 out.innerHTML='';renderTickerWarnings(out);out.appendChild(renderSpyQqqResult(decision));
 status.textContent=`SPY / QQQ check complete: ${decision.label}${decision.best?` on ${decision.best.symbol}`:''}.`;
 updateMetaInfo(formatUpdatedTime(),'fresh daily + 5m + 1m',{label:decision.label,detail:decision.best?`${decision.best.symbol} ${decision.direction}`:'no trade'});
-}catch(err){out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">SPY / QQQ check failed: ${err.message}</div>`;status.textContent='SPY / QQQ check failed.';}
+}catch(err){if(err?.scanFatal)throw err;out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">SPY / QQQ check failed: ${err.message}</div>`;status.textContent='SPY / QQQ check failed.';}
 }
 async function runSignaturePlay(){
 showTab('signatureTab');resetTickerWarnings();
@@ -332,15 +474,16 @@ const ranked=results.sort((a,b)=>b.score-a.score),ready=ranked.filter(x=>x.label
 out.innerHTML='';renderTickerWarnings(out);display.forEach((item,idx)=>{const runners=ranked.filter(r=>r.ticker!==item.ticker).slice(0,3),card=renderSignatureCard(item,runners);if(idx===0)card.classList.add('top-highlight');out.appendChild(card);});
 status.textContent=ready.length?`LB's Signature Play found ${display.length} pullback setup${display.length===1?'':'s'}${tickerWarnings.length?` with ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}`:''}.`:`LB's Signature Play finished: no perfect entry yet. Showing the top ${display.length} closest names${tickerWarnings.length?` with ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}`:''}.`;
 updateMetaInfo(formatUpdatedTime(),'fresh daily + intraday',{label:best.checks?.marketSupportive?'supportive':'not supportive',detail:`SPY VWAP ${best.checks?.spyAboveVWAP?'above':'below'} | QQQ VWAP ${best.checks?.qqqAboveVWAP?'above':'below'}`});
-}catch(err){out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">LB's Signature Play failed: ${err.message}</div>`;status.textContent="LB's Signature Play failed.";}
+}catch(err){if(err?.scanFatal)throw err;out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">LB's Signature Play failed: ${err.message}</div>`;status.textContent="LB's Signature Play failed.";}
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
 document.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{btn.classList.add('button-active');setTimeout(()=>btn.classList.remove('button-active'),550);}));
 document.getElementById('saveKeyBtn').addEventListener('click',saveApiKey);
-document.getElementById('showBtn').addEventListener('click',()=>runScan(false));
-document.getElementById('checkTickerBtn').addEventListener('click',checkSingleTicker);
-document.getElementById('signatureBtn').addEventListener('click',runSignaturePlay);
-document.getElementById('emaCrossBtn').addEventListener('click',runEmaCrossScan);
+document.getElementById('showBtn').addEventListener('click',()=>runAction(()=>runScan(false)));
+document.getElementById('checkTickerBtn').addEventListener('click',()=>runAction(checkSingleTicker));
+document.getElementById('signatureBtn').addEventListener('click',()=>runAction(runSignaturePlay));
+document.getElementById('emaCrossBtn').addEventListener('click',()=>runAction(runEmaCrossScan));
+document.getElementById('stopScanBtn').addEventListener('click',()=>{activeScan?.controller.abort();});
 loadApiKey();
 </script>
 </body>
