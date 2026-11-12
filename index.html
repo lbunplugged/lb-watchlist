@@ -41,19 +41,21 @@ button:disabled{opacity:.5;cursor:not-allowed}
       <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key">
       <label for="creditsPerMinute" class="meta">API credits per minute (match your Twelve Data plan)</label>
       <input id="creditsPerMinute" type="number" min="1" max="1000" step="1" value="8">
-      <div class="meta">Default: 8 credits/minute. A full uncached market scan can take about 25 minutes at this limit. Progress and waiting countdowns appear below. Successful market batches are cached for up to 15 minutes.</div>
+      <div class="meta">Results now appear after each batch. Full market: 190 stocks (about 25 minutes at 8 credits/minute). Quick Scan: SPY, QQQ, AAPL, MSFT, NVDA, AMZN, META, GOOGL. Your credit setting is saved. Set it to your actual API plan limit. Stopped scans can resume for 1 hour; Start Fresh discards prior progress.</div>
       <div class="save-key-row">
         <button id="saveKeyBtn">Save Key</button>
       </div>
       <div class="trade-action-grid">
-        <button id="showBtn" type="button">Scan Market</button>
+        <button id="showBtn" type="button">Scan Market / Resume</button>
         <button id="signatureBtn" class="signature-btn">LB's Signature Play</button>
         <button id="emaCrossBtn" class="ema-cross-btn">EMA Cross Scanner</button>
       </div>
     </div>
+    <div class="trade-action-grid" style="margin-top:10px"><button id="quickScanBtn" type="button">Quick Scan — 8 Stocks</button><button id="freshScanBtn" type="button">Start Fresh — Full Market</button></div>
     <button id="stopScanBtn" type="button" disabled style="margin-top:10px">Stop Scan</button>
     <div class="status-box">
       <div class="status" id="status" role="status">Ready. Save your API key, then scan the market.</div>
+      <div class="meta" id="marketProgress" role="status"></div>
       <div class="meta" id="requestInfo" role="status"></div>
       <div class="meta" id="metaInfo">Last updated: -- | Data source: -- | Market trend: --</div>
     </div>
@@ -209,8 +211,9 @@ function managedFetch(rawUrl) {
 }
 async function runAction(action) {
   if(activeScan) return;
+  saveCreditPreference();
   const job={controller:new AbortController()}; activeScan=job;
-  const controls=['showBtn','signatureBtn','emaCrossBtn','checkTickerBtn','saveKeyBtn','apiKey','creditsPerMinute'];
+  const controls=['showBtn','signatureBtn','emaCrossBtn','checkTickerBtn','saveKeyBtn','apiKey','creditsPerMinute','quickScanBtn','freshScanBtn'];
   controls.forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
   document.getElementById('stopScanBtn').disabled=false;
   requestProgress('Starting. Requests are paced to your selected API credit limit.');
@@ -253,7 +256,7 @@ const SIGNATURE_FULL_MA_BARS=20;
  
 function showTab(tabId){document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active-tab',btn.dataset.tab===tabId));document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('active-panel',panel.id===tabId));document.querySelector('.tabs').scrollIntoView({behavior:'smooth',block:'start'});}
 function getMarketDateKey(){const now=new Date();const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hour12:false});const p=f.formatToParts(now);const d=`${p.find(x=>x.type==='year').value}-${p.find(x=>x.type==='month').value}-${p.find(x=>x.type==='day').value}`;const h=parseInt(p.find(x=>x.type==='hour').value,10);return h>=16?d+'-afterclose':d;}
-function getCacheKey(symbol){return`${CACHE_PREFIX}:${getMarketDateKey()}:${Math.floor(Date.now()/900000)}:${symbol}`;}
+function getCacheKey(symbol){return`${CACHE_PREFIX}:${getMarketDateKey()}:timed:${symbol}`;}
 function saveApiKey(){const key=document.getElementById('apiKey').value.trim();if(!key){alert('Paste your Twelve Data API key first.');return;}const saved=storage.setItem('lb_twelve_data_key',key);document.getElementById('status').textContent=saved?'API key saved in this browser.':'Browser storage is unavailable. You can still scan using the key above.';}
 function loadApiKey(){document.getElementById('apiKey').value=storage.getItem('lb_twelve_data_key')||'';}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -311,12 +314,12 @@ return{ticker,score,label,className,text,dailyItem,checks:{dailyQualified,dailyM
 }
  
 async function fetchChunk(symbols,apiKey,forceRefresh=false){
-const cached=[],uncached=[];for(const symbol of symbols){const raw=storage.getItem(getCacheKey(symbol));if(!forceRefresh&&raw){try{cached.push(JSON.parse(raw));continue;}catch(_){if(_?.scanFatal)throw _;}}uncached.push(symbol);}
+const cached=[],uncached=[];for(const symbol of symbols){const raw=storage.getItem(getCacheKey(symbol));if(!forceRefresh&&raw){try{const hit=JSON.parse(raw);if(hit.row&&Date.now()-hit.time<900000){cached.push(hit.row);continue;}}catch(_){if(_?.scanFatal)throw _;}}uncached.push(symbol);}
 if(!uncached.length)return{rows:cached,source:'cached'};
 const out=[...cached];let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
 if(!batchOk&&uncached.length>1)addTickerWarning('Batch request',data?.message||'Batch failed, so each ticker was checked one at a time.');
 const entries=batchOk?(uncached.length===1&&data?.values?{[uncached[0]]:data}:data):{};
-for(const symbol of uncached){let bars=null;const item=entries?.[symbol];if(item?.values)bars=normalizeSeries(item.values.slice().reverse());else bars=await fetchSeriesForSymbol(symbol,apiKey,'1day',OUTPUTSIZE);if(!bars||bars.length<30)continue;const scored=scoreTickerFromBars(symbol,bars);storage.setItem(getCacheKey(symbol),JSON.stringify(scored));out.push(scored);}return{rows:out,source:cached.length?'mixed':'fresh'};
+for(const symbol of uncached){let bars=null;const item=entries?.[symbol];if(item?.values)bars=normalizeSeries(item.values.slice().reverse());else addTickerWarning(symbol,item?.message||'No daily data returned.');if(!bars||bars.length<30){if(bars)addTickerWarning(symbol,'Insufficient daily history.');continue;}const scored=scoreTickerFromBars(symbol,bars);storage.setItem(getCacheKey(symbol),JSON.stringify({time:Date.now(),row:scored}));out.push(scored);}return{rows:out,source:cached.length?'mixed':'fresh'};
 }
 async function fetchDailyBarsBatch(symbols,apiKey){
 let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
@@ -419,21 +422,72 @@ function renderSignatureChecks(result){if(!result?.checks)return'';const c=resul
 function renderSignatureCard(result,runnersUp=[]){const card=document.createElement('div'),good=result.label==='LB SIGNATURE'||result.label==='PULLBACK ENTRY';card.className=`stock-card clickable ${good?'top-highlight':''}`;const id=`signature-${result.ticker}-${Math.random().toString(36).slice(2,7)}`,runnerText=runnersUp.length?`<div class="rule-line">Other close names: ${runnersUp.map(r=>`${r.ticker} (${Math.round(r.score)}%)`).join(' | ')}</div>`:'';card.innerHTML=`<div class="stock-top"><div class="stock-left"><span class="star-badge">${good?'*':'-'}</span><div class="ticker-wrap"><div class="ticker">${result.ticker}</div><div class="subline">LB's Signature Score | ${Math.round(result.score)}%</div></div></div><div class="stock-right"><div class="entry-pill ${result.className}">${result.label}</div><div class="confidence">${Math.round(result.score)}%</div></div></div>${good?'<div class="best-setup-label">LB Signature Pullback Recovery</div>':''}<div class="quick-line">${result.text}</div><div class="tap-line">Tap for full LB Signature details</div><div id="${id}" class="detail-panel"><div class="detail-title">Pullback Recovery Checklist</div>${renderSignatureChecks(result)}<div class="stats-grid"><div class="stat-chip">Close: ${result.stats?.close??'n/a'}</div><div class="stat-chip">Open: ${result.stats?.sessionOpen??'n/a'}</div><div class="stat-chip">Prev Close: ${result.stats?.previousDailyClose??'n/a'}</div><div class="stat-chip">Low: ${result.stats?.sessionLow??'n/a'}</div><div class="stat-chip">High: ${result.stats?.sessionHigh??'n/a'}</div><div class="stat-chip">Low vs Prev Close: ${result.stats?.lowChangeFromPrevClose??'0.00'}%</div><div class="stat-chip">From Low: ${result.stats?.recoveredFromLowPct??'0.00'}%</div><div class="stat-chip">EMA5: ${result.stats?.ema5??'n/a'}</div><div class="stat-chip">MA20: ${result.stats?.ma20??'n/a'}</div><div class="stat-chip">VWAP: ${result.stats?.vwap??'n/a'}</div><div class="stat-chip">RSI: ${result.stats?.rsi??'n/a'}</div><div class="stat-chip">From Open: ${result.stats?.dayChangeFromOpen??'0.00'}%</div><div class="stat-chip">From Prev Close: ${result.stats?.dayChangeFromPrevClose??'0.00'}%</div><div class="stat-chip">Extension: ${result.stats?.extendedPct??'0.00'}%</div></div>${buildSignatureTradePlan(result)}<div class="rule-line">Best version: daily MACD above signal, stock drops at least 1% below the previous close, recovers from low, EMA5 gets above MA20, price reclaims VWAP, RSI gets back over 50, and price is not too stretched.</div>${runnerText}</div>`;card.addEventListener('click',()=>{const p=card.querySelector(`#${id}`);p.style.display=p.style.display==='block'?'none':'block'});return card;}
 function renderCard(item,opt={}){const{isRisky=false,rank=null,topHighlight=false,intradaySignal=null,isBudgetFriendly=false}=opt;if(isBudgetFriendly)item.isBudgetFriendly=true;const card=document.createElement('div');card.className=`stock-card clickable ${topHighlight?'top-highlight':''}`;const id=`summary-${item.ticker}-${rank||'single'}-${Math.random().toString(36).slice(2,7)}`,v=isRisky?'watch':item.verdict,vlabel=getVerdictLabel(v),vclass=v==='strong'?'verdict-strong':v==='watch'?'verdict-watch':'verdict-avoid',badge=topHighlight?'<span class="star-badge">*</span>':rank?`<span class="rank-badge">#${rank}</span>`:'<span class="rank-badge">-</span>',conf=isRisky?getConfidence(item.riskyScore):item.confidence,entry=getEntryTiming(item,isRisky),best=topHighlight?'<div class="best-setup-label">Best Setup Right Now</div>':isBudgetFriendly?'<div class="best-setup-label">Budget-Friendly Setup</div>':'';card.innerHTML=`<div class="stock-top"><div class="stock-left">${badge}<div class="ticker-wrap"><div class="ticker">${item.ticker}</div><div class="subline">${item.lastDate} | ${item.streak}</div></div></div><div class="stock-right"><div class="verdict ${vclass}">${vlabel}</div><div class="confidence">${conf}%</div></div></div>${best}<div class="quick-line">${topHighlight?'Best setup on the board right now. ':''}${isBudgetFriendly?'Lower-cost setup. ':''}${quickSummary(item,isRisky)}</div><div class="tap-line">Tap for full details</div><div id="${id}" class="detail-panel"><div class="detail-title">Full Breakdown</div><div class="detail-text">${buildFullExplanation(item,rank,isRisky)}</div><div class="detail-grid">${renderIndicators(item,isRisky)}</div>${renderStats(item)}<div class="entry-box"><div class="entry-title">Daily Entry Timing</div><div class="entry-pill ${entry.className}">${entry.label}</div><div class="detail-text">${entry.text}</div></div>${renderIntradaySignal(intradaySignal)}${buildTradePlan(item,isRisky,intradaySignal)}<div class="detail-text" style="margin-top:12px;"><strong>Quick trade idea:</strong> ${buildTradeIdea(item,isRisky,intradaySignal)}</div></div>`;card.addEventListener('click',()=>{const p=card.querySelector(`#${id}`);p.style.display=p.style.display==='block'?'none':'block'});return card;}
  
-async function runScan(forceRefresh=false){
-showTab('topTab');resetTickerWarnings();
-const apiKey=document.getElementById('apiKey').value.trim(),status=document.getElementById('status'),topFive=document.getElementById('topFive'),budgetFriendly=document.getElementById('budgetFriendly');
-topFive.innerHTML='';budgetFriendly.innerHTML='';
-if(!apiKey){status.textContent='Paste and save your Twelve Data API key first.';topFive.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';return;}
-status.textContent='Scanning market...';updateMetaInfo('--','--',null);
-const all=[],sourcesSeen=new Set(),chunks=[];for(let i=0;i<WATCHLIST.length;i+=BATCH_SIZE)chunks.push(WATCHLIST.slice(i,i+BATCH_SIZE));
-for(let i=0;i<chunks.length;i++){const chunk=chunks[i];status.textContent=`Scanning batch ${i+1} of ${chunks.length}... ${chunk.join(', ')}`;const result=await fetchChunk(chunk,apiKey,forceRefresh);sourcesSeen.add(result.source);result.rows.forEach(row=>{const ex=all.findIndex(x=>x.ticker===row.ticker);if(ex>=0)all[ex]=row;else all.push(row);});if(BATCH_DELAY_MS>0&&i<chunks.length-1){status.textContent=`Batch ${i+1} complete. Waiting about 30 seconds to stay inside the API limit...`;await sleep(BATCH_DELAY_MS);}}
-let marketTrend=null;try{marketTrend=await fetchMarketTrend(apiKey,forceRefresh)}catch(_){if(_?.scanFatal)throw _;}
-const ranked=[...all].sort((a,b)=>b.score-a.score).slice(0,5),affordable=[...all].filter(item=>{const price=parseFloat(item.stats.close);return Number.isFinite(price)&&price<=BUDGET_FRIENDLY_MAX_PRICE&&item.verdict!=='avoid'}).sort((a,b)=>b.score-a.score)[0];
-topFive.innerHTML='';renderTickerWarnings(topFive);if(ranked.length)ranked.forEach((item,idx)=>topFive.appendChild(renderCard(item,{rank:idx+1,topHighlight:idx===0})));else topFive.innerHTML+='<div class="note-card">No ticker data came back from Twelve Data. Check your API key or try again later.</div>';
-if(affordable){budgetFriendly.innerHTML='';budgetFriendly.appendChild(renderCard(affordable,{isBudgetFriendly:true}));}else budgetFriendly.innerHTML=`<div class="note-card">No budget-friendly setup under $${BUDGET_FRIENDLY_MAX_PRICE} met the criteria right now.</div>`;
-let source='cached';if(sourcesSeen.has('fresh')&&sourcesSeen.size===1)source='fresh';else if(sourcesSeen.has('mixed')||(sourcesSeen.has('fresh')&&sourcesSeen.has('cached')))source='mixed';
-status.textContent=`Done. Ranked ${all.length} tickers${tickerWarnings.length?`; ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}.`:'.'}`;updateMetaInfo(formatUpdatedTime(),source,marketTrend);
+const MARKET_PROGRESS_KEY='lb-market-progress-v1';
+function saveCreditPreference(){storage.setItem('lb_credits_per_minute',String(creditLimit()));}
+function loadCreditPreference(){const saved=Number(storage.getItem('lb_credits_per_minute'));if(saved>=1&&saved<=1000)document.getElementById('creditsPerMinute').value=String(Math.floor(saved));}
+function marketProgress(rows,done,total,complete=false){
+  const top=document.getElementById('topFive'),budget=document.getElementById('budgetFriendly');
+  top.innerHTML='';budget.innerHTML='';
+  const note=document.createElement('div');note.className='note-card';
+  note.textContent=`${complete?'Scan finished':'Partial results — scan still in progress'}: ${done} of ${total} stocks checked; ${rows.length} returned usable data. Rankings below cover only those stocks.`;
+  top.appendChild(note);renderTickerWarnings(top);
+  const ranked=[...rows].sort((a,b)=>b.score-a.score).slice(0,5);
+  ranked.forEach((item,index)=>top.appendChild(renderCard(item,{rank:index+1,topHighlight:index===0})));
+  const affordable=[...rows].filter(item=>Number(item.stats.close)<=BUDGET_FRIENDLY_MAX_PRICE&&item.verdict!=='avoid').sort((a,b)=>b.score-a.score)[0];
+  if(affordable)budget.appendChild(renderCard(affordable,{isBudgetFriendly:true}));
+  else budget.innerHTML='<div class="note-card">No qualifying budget-friendly setup among the stocks checked so far.</div>';
+  document.getElementById('marketProgress').textContent=`${done} / ${total} checked · ${rows.length} usable results`;
 }
+async function runScan(forceRefresh=false,quick=false){
+  showTab('topTab');resetTickerWarnings();
+  const key=document.getElementById('apiKey').value.trim(),status=document.getElementById('status');
+  if(!key){status.textContent='Paste and save your Twelve Data API key first.';return;}
+  if(forceRefresh)responseCache.clear();
+  const symbols=quick?['SPY','QQQ','AAPL','MSFT','NVDA','AMZN','META','GOOGL']:WATCHLIST;
+  const rows=[],done=new Set();
+  // A checkpoint belongs to one scan, so its early batches do not expire halfway
+  // through a 25-minute run. Resume is explicit and timestamps remain visible.
+  const checkpointKey=MARKET_PROGRESS_KEY+(quick?':quick':':full');
+  let startedAt=Date.now();
+  if(!forceRefresh){
+    try{
+      const saved=JSON.parse(storage.getItem(checkpointKey)||'null');
+      if(saved&&!saved.complete&&saved.date===getMarketDateKey()&&Date.now()-saved.startedAt<3600000&&Array.isArray(saved.rows)&&Array.isArray(saved.done)){
+        startedAt=saved.startedAt;rows.push(...saved.rows.filter(row=>symbols.includes(row.ticker)));
+        saved.done.filter(symbol=>symbols.includes(symbol)).forEach(symbol=>done.add(symbol));
+        (saved.warnings||[]).forEach(w=>addTickerWarning(w.symbol,w.message));
+      }
+    }catch(_){}
+  }
+  const checkpoint=complete=>storage.setItem(checkpointKey,JSON.stringify({date:getMarketDateKey(),startedAt,complete,rows,done:[...done],warnings:tickerWarnings}));
+  marketProgress(rows,done.size,symbols.length);
+  const pending=symbols.filter(symbol=>!done.has(symbol));
+  const batchSize=Math.min(25,creditLimit());
+  const showStatus=()=>{status.textContent=`${quick?'Quick scan':'Market scan'}: ${done.size}/${symbols.length} checked. Results update after every batch.`;};
+  showStatus();
+  document.getElementById('metaInfo').textContent=`Scan started: ${new Date(startedAt).toLocaleTimeString()}. Daily bars may include the current unfinished session. Resumed results retain their original data; start fresh to refresh them.`;
+  try{
+    for(let offset=0;offset<pending.length;offset+=batchSize){
+      checkStopped(activeScan?.controller.signal);
+      const chunk=pending.slice(offset,offset+batchSize);
+      const result=await fetchChunk(chunk,key,forceRefresh);
+      for(const row of result.rows){const index=rows.findIndex(item=>item.ticker===row.ticker);if(index>=0)rows[index]=row;else rows.push(row);}
+      chunk.forEach(symbol=>done.add(symbol));
+      checkpoint(false);marketProgress(rows,done.size,symbols.length);showStatus();
+    }
+    checkpoint(true);marketProgress(rows,done.size,symbols.length,true);
+    status.textContent=`Done. Ranked ${rows.length} tickers out of ${symbols.length} checked${tickerWarnings.length?`; ${tickerWarnings.length} ticker notes`:''}.`;
+    // Do not spend another credit (and an extra minute) just for a SPY label.
+    const spy=rows.find(item=>item.ticker==='SPY');
+    const trend=spy?{label:Number(spy.stats.close)>Number(spy.stats.ema20)&&Number(spy.stats.ema5)>Number(spy.stats.ema20)&&Number(spy.stats.macd)>Number(spy.stats.signal)&&Number(spy.stats.rsi)>=50?'bullish':Number(spy.stats.close)<Number(spy.stats.ema20)&&Number(spy.stats.ema5)<Number(spy.stats.ema20)&&Number(spy.stats.macd)<Number(spy.stats.signal)&&Number(spy.stats.rsi)<50?'bearish':'neutral',detail:`SPY ${spy.stats.close} | RSI ${spy.stats.rsi}`}:{label:'unknown',detail:'SPY unavailable'};
+    updateMetaInfo(formatUpdatedTime(),'Twelve Data daily bars; cached data up to 15 minutes old, or resumed scan data up to 1 hour old',trend);
+  }catch(error){
+    checkpoint(false);
+    document.getElementById('marketProgress').textContent=`Paused: ${done.size} / ${symbols.length} checked. Results remain below. Click the same scan button to resume within 1 hour, or Start Fresh.`;
+    throw error;
+  }
+}
+
 async function checkSingleTicker(){showTab('tickerTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),ticker=document.getElementById('singleTickerInput').value.trim().toUpperCase(),out=document.getElementById('singleTickerResult');out.innerHTML='';if(!apiKey||!ticker){out.innerHTML='<div class="note-card">Enter your API key and a ticker symbol first.</div>';return;}document.getElementById('status').textContent=`Checking ${ticker}...`;try{const daily=await fetchChunk([ticker],apiKey,true),item=daily.rows[0];renderTickerWarnings(out);if(!item){out.innerHTML+=`<div class="note-card">No daily data returned for ${ticker}.</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;return;}let intradaySignal=null;try{intradaySignal=analyzeIntradayEntry(await fetchIntradayTicker(ticker,apiKey));}catch(e){if(e?.scanFatal)throw e;intradaySignal={label:'WAIT',className:'entry-wait',text:`Intraday check unavailable right now: ${e.message}`,stats:null};}out.innerHTML='';renderTickerWarnings(out);const card=renderCard(item,{intradaySignal});out.appendChild(card);card.querySelector('.detail-panel').style.display='block';document.getElementById('status').textContent=`${ticker} checked with daily + intraday logic${tickerWarnings.length?' with ticker notes.':'.'}`;}catch(err){if(err?.scanFatal)throw err;renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;}}
 async function runSpyQqqCheck(){
 showTab('spyQqqTab');resetTickerWarnings();
@@ -484,6 +538,10 @@ document.getElementById('checkTickerBtn').addEventListener('click',()=>runAction
 document.getElementById('signatureBtn').addEventListener('click',()=>runAction(runSignaturePlay));
 document.getElementById('emaCrossBtn').addEventListener('click',()=>runAction(runEmaCrossScan));
 document.getElementById('stopScanBtn').addEventListener('click',()=>{activeScan?.controller.abort();});
+document.getElementById('creditsPerMinute').addEventListener('change',saveCreditPreference);
+document.getElementById('quickScanBtn').addEventListener('click',()=>runAction(()=>runScan(false,true)));
+document.getElementById('freshScanBtn').addEventListener('click',()=>runAction(()=>runScan(true,false)));
+loadCreditPreference();
 loadApiKey();
 </script>
 </body>
