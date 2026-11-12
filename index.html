@@ -35,7 +35,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   </div>
  
   <div class="control-card">
-    <div class="control-label">Access</div>
+    <div class="control-label">Access</div><div class="meta">Scanner update: All scanners v4</div>
     <div class="workflow-line">LB's Signature Play hunts for your pullback recovery setup: strong daily chart, stock drops at least 1% below previous close, then recovers with EMA5 over MA20 and VWAP reclaim.</div>
     <div class="stack">
       <input id="apiKey" type="password" placeholder="Paste your Twelve Data API key">
@@ -82,7 +82,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   </div>
  
   <div id="signatureTab" class="tab-panel">
-    <div class="section-card"><div class="section-title">LB's Signature Play Result</div><div id="signatureResult" class="list"><div class="note-card">Click LB's Signature Play to scan 75 high-volume names for pullback recovery entries.</div></div></div>
+    <div class="section-card"><div class="section-title">LB's Signature Play Result</div><div id="signatureResult" class="list"><div class="note-card">Signature Play checks 75 names in small groups and displays results as each group finishes. On an 8-credit plan, the full daily + intraday scan takes about 25 minutes. Waiting for API credits between groups is normal.</div></div></div>
   </div>
  
   <div id="emaCrossTab" class="tab-panel">
@@ -128,6 +128,7 @@ async function countdown(ms, signal, message) {
   }
 }
 async function reserveCredits(count, signal) {
+  if(!Number.isFinite(count)||count<1||count>creditLimit())throw scanError('Request exceeds the configured credit limit. Check your setting.');
   while (true) {
     checkStopped(signal);
     creditUses = creditUses.filter(use => Date.now()-use.time < CREDIT_WINDOW_MS);
@@ -216,6 +217,7 @@ async function runAction(action) {
   const controls=['showBtn','signatureBtn','emaCrossBtn','checkTickerBtn','saveKeyBtn','apiKey','creditsPerMinute','quickScanBtn','freshScanBtn'];
   controls.forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
   document.getElementById('stopScanBtn').disabled=false;
+  document.getElementById('marketProgress').textContent='';
   requestProgress('Starting. Requests are paced to your selected API credit limit.');
   try { await action(); checkStopped(job.controller.signal); requestProgress('Finished.'); }
   catch(error) {
@@ -224,7 +226,7 @@ async function runAction(action) {
     document.getElementById('status').textContent=message;
     requestProgress('The scan is no longer running. Completed market batches remain cached for another attempt.');
     const container=document.querySelector('.tab-panel.active-panel .list')||document.getElementById('singleTickerResult');
-    if(container){const note=document.createElement('div');note.className='note-card';note.textContent=message;container.prepend(note);}
+    if(container){if(!document.getElementById('marketProgress').textContent.includes('Signature')&&!document.getElementById('marketProgress').textContent.includes('EMA'))renderTickerWarnings(container);const note=document.createElement('div');note.className='note-card';note.textContent=message;container.prepend(note);}
   } finally {
     await requestQueue;
     activeScan=null;
@@ -317,22 +319,22 @@ async function fetchChunk(symbols,apiKey,forceRefresh=false){
 const cached=[],uncached=[];for(const symbol of symbols){const raw=storage.getItem(getCacheKey(symbol));if(!forceRefresh&&raw){try{const hit=JSON.parse(raw);if(hit.row&&Date.now()-hit.time<900000){cached.push(hit.row);continue;}}catch(_){if(_?.scanFatal)throw _;}}uncached.push(symbol);}
 if(!uncached.length)return{rows:cached,source:'cached'};
 const out=[...cached];let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(uncached.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
-if(!batchOk&&uncached.length>1)addTickerWarning('Batch request',data?.message||'Batch failed, so each ticker was checked one at a time.');
+if(!batchOk&&uncached.length>1)addTickerWarning('Batch request',data?.message||'Batch failed; see the data error below.');
 const entries=batchOk?(uncached.length===1&&data?.values?{[uncached[0]]:data}:data):{};
 for(const symbol of uncached){let bars=null;const item=entries?.[symbol];if(item?.values)bars=normalizeSeries(item.values.slice().reverse());else addTickerWarning(symbol,item?.message||'No daily data returned.');if(!bars||bars.length<30){if(bars)addTickerWarning(symbol,'Insufficient daily history.');continue;}const scored=scoreTickerFromBars(symbol,bars);storage.setItem(getCacheKey(symbol),JSON.stringify({time:Date.now(),row:scored}));out.push(scored);}return{rows:out,source:cached.length?'mixed':'fresh'};
 }
 async function fetchDailyBarsBatch(symbols,apiKey){
 let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
-if(!batchOk&&symbols.length>1)addTickerWarning('Daily batch',data?.message||'Daily batch failed, so each ticker was checked one at a time.');
-const out={};for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):await fetchSeriesForSymbol(symbol,apiKey,'1day',OUTPUTSIZE);if(bars?.length)out[symbol]=bars;}return out;
+if(!batchOk&&symbols.length>1)addTickerWarning('Daily batch',data?.message||'Daily batch failed; see the data error below.');
+const out={};for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):null;if(bars?.length)out[symbol]=bars;else addTickerWarning(symbol,item?.message||data?.message||'Daily data unavailable.');}return out;
 }
 async function fetchIntradayTicker(symbol,apiKey){
 const bars=await fetchSeriesForSymbol(symbol,apiKey,INTRADAY_INTERVAL,INTRADAY_OUTPUTSIZE);if(!bars?.length)throw new Error(`No intraday data returned for ${symbol}`);return bars;
 }
 async function fetchIntradayBatch(symbols,apiKey){
 let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=${INTRADAY_INTERVAL}&outputsize=${INTRADAY_OUTPUTSIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}
-if(!batchOk&&symbols.length>1)addTickerWarning('Intraday batch',data?.message||'Intraday batch failed, so each ticker was checked one at a time.');
-const out={};for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):await fetchSeriesForSymbol(symbol,apiKey,INTRADAY_INTERVAL,INTRADAY_OUTPUTSIZE);if(bars?.length)out[symbol]=bars;}return out;
+if(!batchOk&&symbols.length>1)addTickerWarning('Intraday batch',data?.message||'Intraday batch failed; see the data error below.');
+const out={};for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):null;if(bars?.length)out[symbol]=bars;else addTickerWarning(symbol,item?.message||data?.message||'5-minute data unavailable.');}return out;
 }
 function formatUpdatedTime(){return new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',second:'2-digit'}).format(new Date())+' CT';}
 async function fetchMarketTrend(apiKey,forceRefresh=false){
@@ -360,9 +362,63 @@ function renderEarningsRisk(event,ticker,calendarAvailable){if(event){const dayW
 function renderEmaHistory(history){const warning=history.count<5?'<span class="sample-warning">Small Sample</span>':history.count<10?'<span class="sample-warning">Limited Sample</span>':'';const hitRows=[4,5,7,10].map(target=>{const h=history.hitRates[target];return`<div class="stat-chip">+${target}% within 10 days: ${h.hits}/${h.total} (${Math.round(h.rate)}%)</div>`;}).join('');const rows=history.recent.length?history.recent.map(e=>`<tr><td data-label="Cross date">${e.date}</td><td data-label="Cross day">${signedPercent(e.crossDayMove)}</td><td data-label="Max 10D" class="${e.maxGain>=0?'positive':'negative'}">${signedPercent(e.maxGain)}</td><td data-label="Drawdown" class="negative">${signedPercent(e.maxDrawdown)}</td><td data-label="Day 10">${signedPercent(e.day10Close)}</td><td data-label="Peak day">Day ${e.daysToPeak}</td></tr>`).join(''):'<tr><td colspan="6">No completed 10-day examples yet.</td></tr>';return`<div class="entry-box"><div class="entry-title">Historical EMA Cross Performance</div><div class="detail-text">Completed historical crosses: <strong>${history.count}</strong> ${warning}</div><div class="stats-grid">${hitRows}<div class="stat-chip">Median max move: ${signedPercent(history.medianGain)}</div><div class="stat-chip">Average max move: ${signedPercent(history.averageGain)}</div><div class="stat-chip">Average drawdown: ${signedPercent(history.averageDrawdown)}</div><div class="stat-chip">Median cross-day move: ${signedPercent(history.medianCrossMove)}</div></div><div class="detail-title" style="margin-top:14px">Last Three Completed Crosses</div><table class="history-table"><thead><tr><th>Date</th><th>Cross day</th><th>Max 10D</th><th>Drawdown</th><th>Day 10</th><th>Peak</th></tr></thead><tbody>${rows}</tbody></table><div class="rule-line">Max 10D is the highest price reached during the next 10 trading sessions, measured from the crossover close. It is not a guaranteed or automatically captured return.</div></div>`;}
 function renderEmaCard(item,earningsEvent,calendarAvailable){const card=document.createElement('div'),id=`ema-${item.ticker}-${Math.random().toString(36).slice(2,7)}`,recentText=item.category==='RECENTLY CROSSED'?` | crossed ${item.daysAgo} trading day${item.daysAgo===1?'':'s'} ago`:'';card.className=`stock-card clickable ${item.category==='NEWLY CROSSED'?'top-highlight':''}`;card.innerHTML=`<div class="stock-top"><div class="stock-left"><span class="star-badge">${item.category==='NEWLY CROSSED'?'*':'-'}</span><div class="ticker-wrap"><div class="ticker">${item.ticker}</div><div class="subline">Daily candle ${item.date}${recentText}</div></div></div><div class="stock-right"><div class="entry-pill ${emaCategoryClass(item.category)}">${item.category}</div></div></div><div class="ema-values"><div class="ema-value">Price<strong>${money(item.price)}</strong></div><div class="ema-value">EMA5<strong>${money(item.ema5)}</strong></div><div class="ema-value">SMA20<strong>${money(item.sma20)}</strong></div></div><div class="quick-line">EMA5 gap: <strong>${signedPercent(item.gap)}</strong> | EMA5 rising: <strong>${item.rising?'YES':'NO'}</strong> | Price above SMA20: <strong>${item.priceAbove?'YES':'NO'}</strong></div>${renderEarningsRisk(earningsEvent,item.ticker,calendarAvailable)}<div class="tap-line">Tap to see historical crossover results</div><div id="${id}" class="detail-panel">${renderEmaHistory(item.history)}</div>`;card.addEventListener('click',()=>{const panel=card.querySelector(`#${id}`);panel.style.display=panel.style.display==='block'?'none':'block';});return card;}
 async function fetchEarningsCalendar(apiKey){const cacheKey=`${EMA_CACHE_PREFIX}:earnings:${getEasternClock().date}`,cached=storage.getItem(cacheKey);if(cached){try{return JSON.parse(cached);}catch(_){if(_?.scanFatal)throw _;}}const start=getEasternClock().date,endDate=new Date(`${start}T12:00:00`);endDate.setDate(endDate.getDate()+30);const end=`${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;try{const url=`https://api.twelvedata.com/earnings_calendar?start_date=${start}&end_date=${end}&country=United%20States&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url),data=await res.json();if(!res.ok||data?.status==='error')return{available:false,events:{}};const source=data.earnings||data,map={};for(const [date,items] of Object.entries(source)){if(!Array.isArray(items))continue;for(const item of items){if(!item.symbol||map[item.symbol])continue;const days=Math.round((new Date(`${date}T12:00:00`)-new Date(`${start}T12:00:00`))/86400000);if(days>=0)map[item.symbol]={date,days,time:item.time||''};}}const result={available:true,events:map};storage.setItem(cacheKey,JSON.stringify(result));return result;}catch(_){if(_?.scanFatal)throw _;return{available:false,events:{}};}}
-async function fetchEmaBatch(symbols,apiKey){let data=null,batchOk=false;try{const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${EMA_HISTORY_SIZE}&apikey=${encodeURIComponent(apiKey)}`,res=await managedFetch(url);data=await res.json();batchOk=res.ok;}catch(err){if(err?.scanFatal)throw err;data={message:err.message};}if(!batchOk&&symbols.length>1)addTickerWarning('EMA batch',data?.message||'Batch failed; affected tickers will be skipped.');const results=[];for(const symbol of symbols){const item=batchOk?(symbols.length===1&&data?.values?data:data?.[symbol]):null;let bars=item?.values?normalizeSeries(item.values.slice().reverse()):null;if(!bars){bars=await fetchSeriesForSymbol(symbol,apiKey,'1day',EMA_HISTORY_SIZE);}if(!bars||bars.length<35){addTickerWarning(symbol,'Insufficient daily history for the EMA cross scanner.');continue;}const analyzed=analyzeEmaCross(symbol,bars);if(analyzed)results.push(analyzed);}return results;}
-async function runEmaCrossScan(){showTab('emaCrossTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('emaCrossResult'),status=document.getElementById('status');out.innerHTML='';if(!apiKey){out.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';status.textContent='Paste and save your Twelve Data API key first.';return;}const cachedKey=getEmaResultCacheKey();let results=[];const cached=storage.getItem(cachedKey);if(cached){try{results=JSON.parse(cached);}catch(_){if(_?.scanFatal)throw _;}}if(!results.length){const chunks=[];for(let i=0;i<WATCHLIST.length;i+=BATCH_SIZE)chunks.push(WATCHLIST.slice(i,i+BATCH_SIZE));for(let i=0;i<chunks.length;i++){status.textContent=`Scanning EMA setups... ${Math.min(i*BATCH_SIZE+chunks[i].length,WATCHLIST.length)} / ${WATCHLIST.length} stocks analyzed`;out.innerHTML=`<div class="note-card">Scanning EMA setups... ${Math.min(i*BATCH_SIZE+chunks[i].length,WATCHLIST.length)} / ${WATCHLIST.length} stocks analyzed</div>`;results.push(...await fetchEmaBatch(chunks[i],apiKey));if(i<chunks.length-1)await sleep(BATCH_DELAY_MS);}try{storage.setItem(cachedKey,JSON.stringify(results));}catch(_){if(_?.scanFatal)throw _;}}status.textContent='Checking the upcoming earnings calendar...';const earnings=await fetchEarningsCalendar(apiKey);results.sort((a,b)=>emaCategoryOrder(a.category)-emaCategoryOrder(b.category)||(Math.abs(a.gap)-Math.abs(b.gap))||(b.history.hitRates[7].rate-a.history.hitRates[7].rate));out.innerHTML='';renderTickerWarnings(out);if(!results.length){out.innerHTML+='<div class="note-card">No approaching or recent EMA5/SMA20 crosses were found. That is a valid result; do not force a setup.</div>';}else results.forEach(item=>out.appendChild(renderEmaCard(item,earnings.events[item.ticker],earnings.available)));status.textContent=`EMA scan complete. Found ${results.length} qualifying setup${results.length===1?'':'s'}.`;updateMetaInfo(formatUpdatedTime(),'Twelve Data daily history',{label:'EMA scan',detail:`${results.length} qualifying setups`});}
- 
+async function fetchEmaBatch(symbols,apiKey){
+  const url=`${API_ROOT}?symbol=${encodeURIComponent(symbols.join(','))}&interval=1day&outputsize=${EMA_HISTORY_SIZE}&apikey=${encodeURIComponent(apiKey)}`;
+  const response=await managedFetch(url),data=await response.json(),results=[];let valid=0;
+  for(const symbol of symbols){
+    const item=symbols.length===1&&data?.values?data:data?.[symbol];
+    const bars=Array.isArray(item?.values)?normalizeSeries(item.values.slice().reverse()):[];
+    if(bars.length<35){addTickerWarning(symbol,item?.message||'Insufficient daily history for EMA analysis.');continue;}
+    valid++;const result=analyzeEmaCross(symbol,bars);if(result)results.push(result);
+  }
+  return {results,valid};
+}
+function showEmaProgress(results,checked,valid,complete=false,earnings={available:false,events:{}}){
+  const out=document.getElementById('emaCrossResult');out.innerHTML='';
+  const note=document.createElement('div');note.className='note-card';
+  note.textContent=`${complete?'EMA scan finished':'EMA scan partial results'}: ${checked}/${WATCHLIST.length} checked, ${valid} with usable history, ${results.length} qualifying crosses.${results.length?'':' No qualifying crosses in the usable data checked so far.'}`;
+  out.appendChild(note);renderTickerWarnings(out);
+  [...results].sort((a,b)=>emaCategoryOrder(a.category)-emaCategoryOrder(b.category)||Math.abs(a.gap)-Math.abs(b.gap)||(b.history.hitRates[7].rate-a.history.hitRates[7].rate)).forEach(item=>out.appendChild(renderEmaCard(item,earnings.events[item.ticker],earnings.available)));
+  document.getElementById('marketProgress').textContent=`EMA: ${checked}/${WATCHLIST.length} checked · ${valid} usable · ${results.length} crosses`;
+}
+async function runEmaCrossScan(){
+  showTab('emaCrossTab');resetTickerWarnings();
+  const apiKey=document.getElementById('apiKey').value.trim(),status=document.getElementById('status');
+  if(!apiKey){status.textContent='Paste and save your Twelve Data API key first.';return;}
+  const cacheKey=getEmaResultCacheKey()+':progress-v4';let results=[],checked=0,valid=0;
+  try{
+    try{
+      const cached=JSON.parse(storage.getItem(cacheKey)||'null');
+      if(cached&&Array.isArray(cached.results)&&Date.now()-cached.time<900000){results=cached.results;checked=cached.checked;valid=cached.valid;(cached.warnings||[]).forEach(w=>addTickerWarning(w.symbol,w.message));}
+    }catch(_){}
+    showEmaProgress(results,checked,valid);
+    const batchSize=Math.min(25,creditLimit());
+    for(let offset=checked;offset<WATCHLIST.length;offset+=batchSize){
+      checkStopped(activeScan?.controller.signal);
+      const group=WATCHLIST.slice(offset,offset+batchSize);
+      status.textContent=`EMA scan: ${checked}/${WATCHLIST.length} checked. Reading ${group.join(', ')}.`;
+      const batch=await fetchEmaBatch(group,apiKey);
+      if(!batch.valid)throw scanError('This EMA group returned no usable daily history. Scan stopped; check the ticker notes and API data access.');
+      results.push(...batch.results);valid+=batch.valid;checked+=group.length;
+      showEmaProgress(results,checked,valid);
+    }
+    // Cache zero-cross results too. No matches is different from a failed request.
+    storage.setItem(cacheKey,JSON.stringify({time:Date.now(),results,checked,valid,warnings:tickerWarnings}));
+    let earnings={available:false,events:{}};
+    if(results.length){
+      status.textContent=`EMA scan: ${checked}/${WATCHLIST.length} checked. Results below; checking optional earnings calendar.`;
+      try{earnings=await fetchEarningsCalendar(apiKey);}catch(error){if(activeScan?.controller.signal.aborted)throw error;addTickerWarning('Earnings calendar',error.message);}
+    }
+    showEmaProgress(results,checked,valid,true,earnings);
+    status.textContent=`EMA scan complete: ${checked} checked, ${valid} analyzed, ${results.length} qualifying crosses.`;
+    updateMetaInfo(formatUpdatedTime(),'Twelve Data daily history; results cached up to 15 minutes',{label:'EMA scan',detail:`${results.length} crosses`});
+  }catch(error){
+    showEmaProgress(results,checked,valid);
+    document.getElementById('marketProgress').textContent=`EMA stopped: ${checked}/${WATCHLIST.length} checked. Partial results retained; restarting EMA begins a new scan.`;
+    throw error;
+  }
+}
+
 function quickSummary(item,isRisky=false){if(item.isBudgetFriendly)return`Strongest setup under $${BUDGET_FRIENDLY_MAX_PRICE}. Lower-priced stock, but still judged by the same system.`;if(isRisky)return'Early setup. Interesting, but not fully confirmed yet.';if(item.verdict==='strong')return'One of the cleaner names on the board right now.';if(item.verdict==='watch')return'Keep this on watch, but it still needs more confirmation.';return'Stay away from this one right now.';}
 function buildFullExplanation(item,rank=null,isRisky=false){const p=[];if(isRisky)p.push(`${item.ticker} is the risky setup because momentum is trying to turn before full confirmation arrives.`);else if(item.verdict==='strong')p.push(`${item.ticker}${rank?` ranked #${rank}`:''} because several main signals are aligned.`);else if(item.verdict==='watch')p.push(`${item.ticker} has enough working to stay on your radar, but it does not have full alignment yet.`);else p.push(`${item.ticker} does not fit your current call strategy right now.`);p.push(item.checks.priceAbove20?'Price is above the 20 EMA.':'Price is below the 20 EMA.');p.push(item.checks.emaBullish?'The 5 EMA is bullish versus the 20 EMA.':'The 5 EMA is not giving a bullish advantage.');p.push(item.checks.macdBullish?'MACD is bullish.':'MACD is not bullish.');p.push(item.checks.rsiBullish?`RSI is in a healthy zone at ${item.stats.rsi}.`:`RSI is at ${item.stats.rsi}, outside your preferred zone.`);p.push(item.checks.volumeBullish?'Volume supports the move.':'Volume is not confirming the move.');return p.join(' ');}
 function buildTradeIdea(item,isRisky=false,intradaySignal=null){if(intradaySignal?.label==='ENTER NOW'){if(item.verdict!=='strong')return'Intraday may look active, but the daily setup is not strong enough.';return'Daily setup is strong and intraday confirms buyers are in control right now.';}if(intradaySignal?.label==='WAIT')return'Daily setup may still be solid, but intraday says do not force it yet.';if(intradaySignal?.label==='STAY OUT')return'Intraday is not giving you a quality call entry right now.';if(isRisky)return'Treat this like an early reversal idea. Let price prove itself first.';if(item.verdict==='strong'&&item.checks.volumeBullish)return'Strong setup. Watch for continuation or a clean pullback entry.';if(item.verdict==='strong')return'Strong setup, but volume is light. Wait for better participation.';if(item.verdict==='watch')return'Needs more confirmation. Keep it on watch.';return'Stay patient and avoid forcing a trade here.';}
@@ -471,6 +527,7 @@ async function runScan(forceRefresh=false,quick=false){
       checkStopped(activeScan?.controller.signal);
       const chunk=pending.slice(offset,offset+batchSize);
       const result=await fetchChunk(chunk,key,forceRefresh);
+      if(!result.rows.length){marketProgress(rows,done.size,symbols.length);throw scanError('No usable daily data returned for this market group. Scan stopped; check the ticker notes and API data access.');}
       for(const row of result.rows){const index=rows.findIndex(item=>item.ticker===row.ticker);if(index>=0)rows[index]=row;else rows.push(row);}
       chunk.forEach(symbol=>done.add(symbol));
       checkpoint(false);marketProgress(rows,done.size,symbols.length);showStatus();
@@ -488,7 +545,30 @@ async function runScan(forceRefresh=false,quick=false){
   }
 }
 
-async function checkSingleTicker(){showTab('tickerTab');resetTickerWarnings();const apiKey=document.getElementById('apiKey').value.trim(),ticker=document.getElementById('singleTickerInput').value.trim().toUpperCase(),out=document.getElementById('singleTickerResult');out.innerHTML='';if(!apiKey||!ticker){out.innerHTML='<div class="note-card">Enter your API key and a ticker symbol first.</div>';return;}document.getElementById('status').textContent=`Checking ${ticker}...`;try{const daily=await fetchChunk([ticker],apiKey,true),item=daily.rows[0];renderTickerWarnings(out);if(!item){out.innerHTML+=`<div class="note-card">No daily data returned for ${ticker}.</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;return;}let intradaySignal=null;try{intradaySignal=analyzeIntradayEntry(await fetchIntradayTicker(ticker,apiKey));}catch(e){if(e?.scanFatal)throw e;intradaySignal={label:'WAIT',className:'entry-wait',text:`Intraday check unavailable right now: ${e.message}`,stats:null};}out.innerHTML='';renderTickerWarnings(out);const card=renderCard(item,{intradaySignal});out.appendChild(card);card.querySelector('.detail-panel').style.display='block';document.getElementById('status').textContent=`${ticker} checked with daily + intraday logic${tickerWarnings.length?' with ticker notes.':'.'}`;}catch(err){if(err?.scanFatal)throw err;renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">Could not check ${ticker}: ${err.message}</div>`;document.getElementById('status').textContent=`Could not check ${ticker}.`;}}
+async function checkSingleTicker(){
+  showTab('tickerTab');resetTickerWarnings();
+  const apiKey=document.getElementById('apiKey').value.trim(),ticker=document.getElementById('singleTickerInput').value.trim().toUpperCase();
+  const out=document.getElementById('singleTickerResult'),status=document.getElementById('status');out.innerHTML='';
+  if(!apiKey||!ticker){status.textContent='Enter your API key and a ticker symbol first.';return;}
+  if(!/^[A-Z0-9][A-Z0-9.:-]{0,19}$/.test(ticker)){status.textContent='Enter one valid ticker symbol, such as AAPL or BRK.B.';return;}
+  const render=(item,signal)=>{out.innerHTML='';renderTickerWarnings(out);const card=renderCard(item,{intradaySignal:signal});out.appendChild(card);card.querySelector('.detail-panel').style.display='block';};
+  status.textContent=`${ticker}: step 1 of 2 — checking daily chart.`;
+  const daily=await fetchChunk([ticker],apiKey,true),item=daily.rows[0];
+  if(!item){renderTickerWarnings(out);throw scanError(`No usable daily data returned for ${ticker}.`);}
+  render(item,{label:'WAIT',className:'entry-wait',text:'Daily chart received. Intraday check is still pending.',stats:null});
+  status.textContent=`${ticker}: step 2 of 2 — daily results below; checking 5-minute chart.`;
+  let signal;
+  try{signal=analyzeIntradayEntry(await fetchIntradayTicker(ticker,apiKey));}
+  catch(error){
+    render(item,{label:'WAIT',className:'entry-wait',text:'Intraday check did not finish. Only the daily result is available.',stats:null});
+    if(error.scanFatal)throw error;
+    addTickerWarning(ticker,'Intraday data unavailable.');
+    signal={label:'WAIT',className:'entry-wait',text:'Intraday data unavailable. Daily result only.',stats:null};
+  }
+  render(item,signal);
+  status.textContent=`${ticker} checked. ${signal.stats?'Daily and intraday results available.':'Daily result available; intraday confirmation unavailable.'}`;
+}
+
 async function runSpyQqqCheck(){
 showTab('spyQqqTab');resetTickerWarnings();
 const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('spyQqqResult'),status=document.getElementById('status');
@@ -511,25 +591,65 @@ status.textContent=`SPY / QQQ check complete: ${decision.label}${decision.best?`
 updateMetaInfo(formatUpdatedTime(),'fresh daily + 5m + 1m',{label:decision.label,detail:decision.best?`${decision.best.symbol} ${decision.direction}`:'no trade'});
 }catch(err){if(err?.scanFatal)throw err;out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">SPY / QQQ check failed: ${err.message}</div>`;status.textContent='SPY / QQQ check failed.';}
 }
-async function runSignaturePlay(){
-showTab('signatureTab');resetTickerWarnings();
-const apiKey=document.getElementById('apiKey').value.trim(),out=document.getElementById('signatureResult'),status=document.getElementById('status');
-out.innerHTML='';
-if(!apiKey){out.innerHTML='<div class="note-card">Paste and save your Twelve Data API key first.</div>';status.textContent='Paste and save your Twelve Data API key first.';return;}
-status.textContent="LB's Signature Play is scanning pullback recovery setups...";
-out.innerHTML='<div class="note-card">Scanning 75 strong names in 3 batches for a 1% red-day pullback, recovery from low, EMA5 over MA20, and VWAP reclaim...</div>';
-try{
-const dailyData={},intradayData={},chunks=[];for(let i=0;i<SIGNATURE_LIST.length;i+=25)chunks.push(SIGNATURE_LIST.slice(i,i+25));
-for(let i=0;i<chunks.length;i++){const chunk=Array.from(new Set([...chunks[i],'SPY','QQQ']));status.textContent=`LB's Signature Play scanning batch ${i+1} of ${chunks.length}...`;out.innerHTML=`<div class="note-card">Scanning batch ${i+1} of ${chunks.length}: ${chunks[i].join(', ')}</div>`;Object.assign(dailyData,await fetchDailyBarsBatch(chunk,apiKey));Object.assign(intradayData,await fetchIntradayBatch(chunk,apiKey));}
-const spyBars=intradayData.SPY,qqqBars=intradayData.QQQ;if(!spyBars||!qqqBars)throw new Error('SPY or QQQ intraday data unavailable, so market support cannot be checked.');
-const results=[];for(const ticker of SIGNATURE_LIST){const dailyBars=dailyData[ticker],intradayBars=intradayData[ticker];if(!dailyBars||!intradayBars){addTickerWarning(ticker,'Missing daily or intraday data, so this ticker was skipped.');continue;}results.push(analyzeSignaturePlayTicker(ticker,getDailySetupDetails(ticker,dailyBars),intradayBars,spyBars,qqqBars));}
-if(!results.length){out.innerHTML='';renderTickerWarnings(out);out.innerHTML+='<div class="note-card">No data returned for LB Signature Play.</div>';status.textContent="LB's Signature Play could not return results.";return;}
-const ranked=results.sort((a,b)=>b.score-a.score),ready=ranked.filter(x=>x.label==='LB SIGNATURE'||x.label==='PULLBACK ENTRY'),display=(ready.length?ready:ranked).slice(0,5),best=display[0];
-out.innerHTML='';renderTickerWarnings(out);display.forEach((item,idx)=>{const runners=ranked.filter(r=>r.ticker!==item.ticker).slice(0,3),card=renderSignatureCard(item,runners);if(idx===0)card.classList.add('top-highlight');out.appendChild(card);});
-status.textContent=ready.length?`LB's Signature Play found ${display.length} pullback setup${display.length===1?'':'s'}${tickerWarnings.length?` with ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}`:''}.`:`LB's Signature Play finished: no perfect entry yet. Showing the top ${display.length} closest names${tickerWarnings.length?` with ${tickerWarnings.length} ticker note${tickerWarnings.length===1?'':'s'}`:''}.`;
-updateMetaInfo(formatUpdatedTime(),'fresh daily + intraday',{label:best.checks?.marketSupportive?'supportive':'not supportive',detail:`SPY VWAP ${best.checks?.spyAboveVWAP?'above':'below'} | QQQ VWAP ${best.checks?.qqqAboveVWAP?'above':'below'}`});
-}catch(err){if(err?.scanFatal)throw err;out.innerHTML='';renderTickerWarnings(out);out.innerHTML+=`<div class="note-card">LB's Signature Play failed: ${err.message}</div>`;status.textContent="LB's Signature Play failed.";}
+function showSignatureProgress(results,checked,total,complete=false){
+  const out=document.getElementById('signatureResult');out.innerHTML='';
+  const note=document.createElement('div');note.className='note-card';
+  note.textContent=`${complete?'Scan finished':'Partial results'}: ${checked} of ${total} stocks checked; ${results.length} analyzed. Rankings cover only these stocks. Each card is a snapshot from when that stock was checked.`;
+  out.appendChild(note);renderTickerWarnings(out);
+  const ranked=[...results].sort((a,b)=>b.score-a.score);
+  const ready=ranked.filter(item=>item.label==='LB SIGNATURE'||item.label==='PULLBACK ENTRY');
+  (ready.length?ready:ranked).slice(0,5).forEach(item=>out.appendChild(renderSignatureCard(item,ranked.filter(other=>other.ticker!==item.ticker).slice(0,3))));
+  document.getElementById('marketProgress').textContent=`Signature Play: ${checked} / ${total} checked · ${results.length} analyzed`;
 }
+async function runSignaturePlay(){
+  showTab('signatureTab');resetTickerWarnings();
+  const apiKey=document.getElementById('apiKey').value.trim(),status=document.getElementById('status');
+  if(!apiKey){status.textContent='Paste and save your Twelve Data API key first.';return;}
+  const results=[];let checked=0;
+  // Budget for daily + intraday bars per stock AND up to two benchmark symbols.
+  // On an eight-credit plan this checks three stocks per group, rather than
+  // silently performing more than fifty symbol requests under "batch 1".
+  const groupSize=Math.max(1,Math.min(10,Math.floor((creditLimit()-2)/2)));
+  showSignatureProgress(results,0,SIGNATURE_LIST.length);
+  updateMetaInfo('--','Signature Play scan in progress',null);
+  try{
+    for(let offset=0;offset<SIGNATURE_LIST.length;offset+=groupSize){
+      checkStopped(activeScan?.controller.signal);
+      const group=SIGNATURE_LIST.slice(offset,offset+groupSize);
+      status.textContent=`Signature Play: ${checked}/${SIGNATURE_LIST.length} checked. Reading daily charts: ${group.join(', ')}.`;
+      const daily=await fetchDailyBarsBatch(group,apiKey);
+      if(!Object.values(daily).some(bars=>bars.length>=30)){
+        throw scanError(`No usable daily data returned for ${group.join(', ')}. Scan stopped instead of spending credits on more empty groups. Check the ticker notes and your API data access.`);
+      }
+      status.textContent=`Signature Play: ${checked}/${SIGNATURE_LIST.length} checked. Daily charts received; reading 5-minute charts for ${group.join(', ')} and SPY/QQQ.`;
+      const intraday=await fetchIntradayBatch([...new Set([...group,'SPY','QQQ'])],apiKey);
+      if(!intraday.SPY?.length||!intraday.QQQ?.length)throw scanError('SPY or QQQ 5-minute data is unavailable. Signature Play cannot check market support. Check the ticker notes and your API plan.');
+      for(const ticker of group){
+        const dailyBars=daily[ticker],intradayBars=intraday[ticker];
+        if(dailyBars?.length>=30&&intradayBars?.length){
+          const result=analyzeSignaturePlayTicker(ticker,getDailySetupDetails(ticker,dailyBars),intradayBars,intraday.SPY,intraday.QQQ);
+          result.text+=` Checked at ${formatUpdatedTime()}.`;
+          results.push(result);
+        }else addTickerWarning(ticker,'Missing daily or 5-minute data; skipped.');
+        checked++;
+      }
+      showSignatureProgress(results,checked,SIGNATURE_LIST.length);
+      status.textContent=`Signature Play: ${checked}/${SIGNATURE_LIST.length} checked. Partial results are available below.`;
+    }
+    showSignatureProgress(results,checked,SIGNATURE_LIST.length,true);
+    const ready=results.filter(item=>item.label==='LB SIGNATURE'||item.label==='PULLBACK ENTRY');
+    status.textContent=`Signature Play complete: ${checked} checked, ${results.length} analyzed, ${ready.length} qualifying setups.`;
+    updateMetaInfo(formatUpdatedTime(),'Daily + 5-minute snapshots; see each card for check time',{label:'scan complete'});
+  }catch(error){
+    showSignatureProgress(results,checked,SIGNATURE_LIST.length);
+    const note=document.createElement('div');note.className='note-card';
+    note.textContent=`Signature Play stopped after ${checked} of ${SIGNATURE_LIST.length} stocks. Results below are incomplete. Starting Signature Play again begins a new scan.`;
+    document.getElementById('signatureResult').prepend(note);
+    document.getElementById('marketProgress').textContent=`Signature Play stopped: ${checked}/${SIGNATURE_LIST.length} checked; ${results.length} results retained.`;
+    throw error;
+  }
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
 document.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{btn.classList.add('button-active');setTimeout(()=>btn.classList.remove('button-active'),550);}));
 document.getElementById('saveKeyBtn').addEventListener('click',saveApiKey);
